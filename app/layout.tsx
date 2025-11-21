@@ -1,17 +1,24 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Orbitron, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+// <CHANGE> Updated fonts to Orbitron for headings and Inter for body for cyberpunk aesthetic
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  variable: "--font-orbitron",
+})
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+})
+
+// <CHANGE> Updated metadata for DJ Phantøm portfolio
 export const metadata: Metadata = {
-  title: "Talaj FC - A Legjobb Kosárlabda Csapat",
-  description:
-    "A Szentgyörgyi István Általános Iskola legenda kosárlabda csapata. 100% győzelmi arány, villámgyors támadások, kiváló játékosok!",
+  title: "DJ Phantøm | Juhász Koppány",
+  description: "DJ és Informatikus - Ahol a zene és az informatika találkozik",
   generator: "v0.app",
   icons: {
     icon: [
@@ -39,9 +46,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="hu">
-      <body className={`font-sans antialiased`}>
+      <body className={`${inter.variable} ${orbitron.variable} font-sans antialiased`}>
         {children}
-        <Toaster />
         <Analytics />
       </body>
     </html>

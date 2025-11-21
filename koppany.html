@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DJ Phantøm - Juhász Koppány</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .smoke-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .smoke {
+            position: absolute;
+            bottom: -100px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.15) 0%, rgba(0, 200, 255, 0.05) 40%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            animation: rise 15s infinite ease-in-out;
+            opacity: 0;
+        }
+
+        .smoke:nth-child(1) { left: 10%; animation-delay: 0s; }
+        .smoke:nth-child(2) { left: 25%; animation-delay: 3s; width: 200px; height: 200px; }
+        .smoke:nth-child(3) { left: 45%; animation-delay: 6s; width: 180px; height: 180px; }
+        .smoke:nth-child(4) { left: 65%; animation-delay: 9s; }
+        .smoke:nth-child(5) { left: 80%; animation-delay: 12s; width: 220px; height: 220px; }
+
+        @keyframes rise {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 0.4;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 100px 20px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(0, 255, 255, 0.1) 0%, transparent 100%);
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00ffff 0%, #00d4ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: #00ffff;
+            font-style: italic;
+        }
+
+        section {
+            padding: 80px 20px;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: #00ffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .about-content {
+            max-width: 800px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #c0c0c0;
+        }
+
+        .about-content p {
+            margin-bottom: 20px;
+        }
+
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(20, 20, 20, 0.8);
+            padding: 40px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00ffff;
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(30, 30, 30, 0.9);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .required {
+            color: #ff4444;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #00ffff 0%, #00d4ff 100%);
+            color: #0a0a0a;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error {
+            color: #ff4444;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .success {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            h2 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .contact-form {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="smoke-container">
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+    </div>
+
+    <header>
+        <div class="container">
+            <h1>DJ Phantøm</h1>
+            <p class="subtitle">Juhász Koppány</p>
+            <p class="tagline">Ahol a zene és az informatika találkozik</p>
+        </div>
+    </header>
+
+    <section id="about">
+        <div class="container">
+            <h2>Rólam</h2>
+            <div class="about-content">
+                <p><strong>Szia, Juhász Koppány vagyok – vagy ahogy a legtöbben ismernek: DJ Phantøm.</strong></p>
+                
+                <p>Már 9 évesen beleszerettem a DJ-zés világába. A zene, a ritmus és a pult mögötti varázslat teljesen elkapott. 10 éves koromban megkaptam az első saját DJ pultomat, és onnantól kezdve minden szabad percem a gyakorlásról szólt.</p>
+                
+                <p>11 évesen már komolyan fejlesztettem a technikámat, és 12 évesen elkezdtem hangosítani iskolai rendezvényeken, falusi eseményeken, lagzikon és születésnapi bulikon.</p>
+                
+                <p><strong>Számomra a DJ-zés nem csak zene – ez szenvedély, önkifejezés és energiaátadás.</strong></p>
+                
+                <p>De nem csak a zenében találtam meg önmagam.</p>
+                
+                <p>Már fiatalon elkezdett érdekelni az informatika világa is: a számítógépek működése, a programok logikája, a technológia rejtett világa. Szívesen tanulok új dolgokat, kísérletezem, és minden nap bővítem a tudásomat – legyen szó zenei szoftverekről, rendszerekről vagy akár programozásról.</p>
+                
+                <p><strong>Célom, hogy a zenét és a technológiát ötvözve egyedi és különleges élményeket hozzak létre.</strong></p>
+                
+                <p>Üdv a világomban – ahol a zene és az informatika találkozik.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="container">
+            <h2>Kapcsolat</h2>
+            <div class="contact-form">
+                <div id="successMessage" class="success" style="display: none;">
+                    Üzenet sikeresen elküldve! Hamarosan jelentkezem.
+                </div>
+                <form id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Név <span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email">
+                        <div id="emailError" class="error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Telefonszám</label>
+                        <input type="tel" id="phone" name="phone">
+                        <div id="phoneError" class="error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="message">Üzenet <span class="required">*</span></label>
+                        <textarea id="message" name="message" required></textarea>
+                    </div>
+                    
+                    <button type="submit" id="submitBtn">Üzenet küldése</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const message = document.getElementById('message').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const emailError = document.getElementById('emailError');
+            const phoneError = document.getElementById('phoneError');
+            
+            emailError.textContent = '';
+            phoneError.textContent = '';
+            
+            if (!email && !phone) {
+                emailError.textContent = 'Email vagy telefonszám megadása kötelező!';
+                phoneError.textContent = 'Email vagy telefonszám megadása kötelező!';
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Küldés...';
+            
+            const webhookData = {
+                content: `**Új üzenet érkezett a weboldalról!**\n\n**Név:** ${name}\n**Email:** ${email || 'Nincs megadva'}\n**Telefon:** ${phone || 'Nincs megadva'}\n\n**Üzenet:**\n${message}`
+            };
+            
+            try {
+                const response = await fetch('https://discord.com/api/webhooks/1441520976150921329/3StwfQ8JhXmP3kWcIVh91y0LQnd5N1nPxuon0hbjDqsKlyk5aPwQjd6BfkrVyGI9duzc', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(webhookData)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('contactForm').reset();
+                    setTimeout(() => {
+                        document.getElementById('successMessage').style.display = 'none';
+                    }, 5000);
+                } else {
+                    alert('Hiba történt az üzenet küldése során. Kérlek, próbáld újra!');
+                }
+            } catch (error) {
+                alert('Hiba történt az üzenet küldése során. Kérlek, próbáld újra!');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Üzenet küldése';
+        });
+    </script>
+</body>
+</html>
