@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gorilla Parkour Chase - VR Endless Evasion Fan Game</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <a-scene 
+    background="color: #87CEEB" 
+    fog="type: linear; color: #228B22; near: 25; far: 100"
+    environment="preset: forest; lightPosition: 1 10 -5; dressingAmount: 0.5; ground: hills; groundColor: #0a4a0a; groundTexture: none; skyType: atmosphere; skyColor: #87CEEB; fog: 0.4">
+    
+    <!-- Player Rig -->
+    <a-entity id="rig" position="0 1.6 0" gorilla-locomotion>
+      <a-entity id="camera" camera look-controls wasd-controls="acceleration: 20">
+        <!-- HUD -->
+        <a-text id="hud-text" position="0 -0.3 -1.5" align="center" text="SURVIVAL: 0s | AI: 0" scale="0.6 0.6 0.6" color="yellow" shader="flat"></a-text>
+        <a-text position="-1.8 -0.6 -1.5" align="left" text="SWING ARMS TO FLY & PARKOUR | DODGE AI CHASE" scale="0.25 0.25 0.25" color="white"></a-text>
+      </a-entity>
+      
+      <!-- Gorilla Hands/Fists -->
+      <a-entity id="left-hand" hand-controls="hand: left; model: lowPoly" thrust-emitter>
+        <a-sphere position="0 0 -0.15" radius="0.1" color="#8B4513" material="shader: flat; emissive: #654321; emissiveIntensity: 0.2"></a-sphere>
+      </a-entity>
+      <a-entity id="right-hand" hand-controls="hand: right; model: lowPoly" thrust-emitter>
+        <a-sphere position="0 0 -0.15" radius="0.1" color="#8B4513" material="shader: flat; emissive: #654321; emissiveIntensity: 0.2"></a-sphere>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Enhanced Lighting & Shadows -->
+    <a-light type="ambient" intensity="0.4" color="#556B2F"></a-light>
+    <a-light type="directional" intensity="0.8" position="2 15 5" rotation="-45 45 0" 
+             shadow="cast: true; receive: true; type: pcfsoft; mapSize: 2048; near: 0.1; far: 100"></a-light>
+    <a-light type="point" position="0 10 0" intensity="0.3" color="#90EE90" distance="20"></a-light>
+    
+    <!-- Parkour Map: Trees, Platforms, Vines, Branches -->
+    <a-entity id="map">
+      <!-- Central Trees -->
+      <a-cylinder position="0 0 0" radius="0.6" height="25" color="#8B4513" shadow="cast: true; receive: true" 
+                  animation__sway="property: rotation; dir: alternate; dur: 4000; from: 0 -2 0; to: 0 2 0; loop: true; easing: easeInOutSine"></a-cylinder>
+      <a-sphere position="0 12 0" radius="6" color="#228B22;0.8" segments-width="12" segments-height="12" shadow="cast: true" 
+                animation__sway="property: rotation; dir: alternate; dur: 3000; from: -1 0 0; to: 1 0 0; loop: true; easing: easeInOutSine"></a-sphere>
+      
+      <!-- More Trees -->
+      <a-entity position="12 0 8" rotation="0 15 0">
+        <a-cylinder radius="0.5" height="20" color="#8B4513" shadow="cast: true"></a-cylinder>
+        <a-sphere position="0 10 0" radius="5" color="#228B22" segments-width="10" segments-height="10" shadow="cast: true"></a-sphere>
+      </a-entity>
+      <a-entity position="-15 0 -10" rotation="0 -20 0">
+        <a-cylinder radius="0.4" height="18" color="#8B4513" shadow="cast: true"></a-cylinder>
+        <a-sphere position="0 9 0" radius="4" color="#228B22" segments-width="10" segments-height="10" shadow="cast: true"></a-sphere>
+      </a-entity>
+      <a-entity position="20 0 15" rotation="0 30 0">
+        <a-cylinder radius="0.45" height="22" color="#8B4513" shadow="cast: true"></a-cylinder>
+        <a-sphere position="0 11 0" radius="5.5" color="#228B22" segments-width="10" segments-height="10" shadow="cast: true"></a-sphere>
+      </a-entity>
+      
+      <!-- Parkour Platforms -->
+      <a-box position="8 4 -5" width="5" height="0.3" depth="5" color="#654321" shadow="cast: true; receive: true" material="roughness: 0.8"></a-box>
+      <a-box position="-8 6 10" width="4" height="0.3" depth="4" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="15 8 -12" width="3.5" height="0.3" depth="3.5" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-12 3 18" width="6" height="0.3" depth="6" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="0 9 -20" width="4" height="0.3" depth="4" color="#654321" shadow="cast: true; receive: true"></a-box>
+      
+      <!-- Branches (swing under) -->
+      <a-cylinder position="5 7 0" radius="0.15" height="8" color="#A0522D" rotation="-90 0 0" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="-10 5 5" radius="0.12" height="6" color="#A0522D" rotation="-90 0 0" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="18 6 -8" radius="0.15" height="7" color="#A0522D" rotation="-90 0 0" shadow="cast: true"></a-cylinder>
+      
+      <!-- Vines (climb visuals) -->
+      <a-cylinder position="12 2 12" radius="0.05" height="12" color="#228B22" rotation="90 0 0" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="-18 1 8" radius="0.04" height="10" color="#228B22" rotation="90 0 0" shadow="cast: true"></a-cylinder>
+      
+      <!-- Ground -->
+      <a-plane position="0 0.01 0" rotation="-90 0 0" width="200" height="200" color="#0a4a0a" shadow="receive: true" material="roughness: 0.9; repeat: 50 50"></a-plane>
+    </a-entity>
+    
+    <!-- Falling Leaves Particles -->
+    <a-entity position="0 15 0" particle-system="particleCount: 1500; velocity: 0 -0.2 0; velocitySpread: 0.3 0.1 0.3; color: #90EE90,#32CD32,#228B22; startSize: 0.05; endSize: 0.1; acceleration: 0 -0.01 0; maxAge: 8; tint: #90EE90"></a-entity>
+    <a-entity position="20 12 -10" particle-system="particleCount: 800; velocity: -0.1 -0.15 0.1; velocitySpread: 0.2 0.05 0.2; color: #90EE90,#32CD32; startSize: 0.04; maxAge: 6"></a-entity>
+    
+    <!-- Game Systems -->
+    <a-entity id="game-manager" game-manager></a-entity>
+    <a-entity id="ai-spawner" ai-spawner></a-entity>
+    
+  </a-scene>
+
+  <script>
+    // SHARED VELOCITY LOCOMOTION - Gorilla Tag Style (IMPROVED w/ Hand Velocity)
+    AFRAME.registerComponent('gorilla-locomotion', {
+      init: function () {
+        this.velocity = new THREE.Vector3();
+        this.dragXZ = 0.915;
+        this.dragY = 0.94;
+        this.platforms = [
+          {pos: new THREE.Vector3(8, 4, -5), halfSize: new THREE.Vector3(2.5, 0.15, 2.5)},
+          {pos: new THREE.Vector3(-8, 6, 10), halfSize: new THREE.Vector3(2, 0.15, 2)},
+          {pos: new THREE.Vector3(15, 8, -12), halfSize: new THREE.Vector3(1.75, 0.15, 1.75)},
+          {pos: new THREE.Vector3(-12, 3, 18), halfSize: new THREE.Vector3(3, 0.15, 3)},
+          {pos: new THREE.Vector3(0, 9, -20), halfSize: new THREE.Vector3(2, 0.15, 2)}
+        ];
+      },
+      tick: function () {
+        const delta = this.el.sceneEl.frame ? 0.016 : 0.016; // ~60fps
+        const pos = this.el.object3D.position.clone();
+
+        // Apply velocity
+        this.velocity.multiplyScalar(delta / 0.016);
+        pos.add(this.velocity);
+
+        // Platform collision
+        for (let plat of this.platforms) {
+          const dx = Math.abs(pos.x - plat.pos.x);
+          const dy = Math.abs(pos.y - (plat.pos.y + 1.6));
+          const dz = Math.abs(pos.z - plat.pos.z);
+          if (dx < plat.halfSize.x && dz < plat.halfSize.z && pos.y >= plat.pos.y - 0.1) {
+            pos.y = plat.pos.y + 1.6;
+            this.velocity.y = 0;
+            break;
+          }
+        }
+
+        // Ground clamp
+        if (pos.y < 1.6) {
+          pos.y = 1.6;
+          this.velocity.y = 0;
+        }
+
+        // Apply drag
+        this.velocity.x *= this.dragXZ;
+        this.velocity.z *= this.dragXZ;
+        this.velocity.y *= this.dragY;
+
+        this.el.setAttribute('position', pos);
+      },
+      addThrust: function (thrustVec) {
+        this.velocity.add(thrustVec);
+      }
+    });
+
+    // THRUST EMITTER - On hands (velocity-based swing detect)
+    AFRAME.registerComponent('thrust-emitter', {
+      init: function () {
+        this.history = [];
+        this.maxHist = 8;
+        this.rig = document.querySelector('#rig');
+        this.thrustMult = 0.025;
+        this.velThresh = 0.8;
+      },
+      tick: function () {
+        const worldPos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(worldPos);
+        const now = performance.now();
+
+        this.history.push({pos: worldPos.clone(), time: now});
+        if (this.history.length > this.maxHist) this.history.shift();
+
+        if (this.history.length > 2) {
+          const first = this.history[0];
+          const dt = (now - first.time) / 1000;
+          if (dt > 0.01) {
+            const vel = worldPos.clone().sub(first.pos).multiplyScalar(1 / dt);
+
+            // Player forward dir
+            const cam = document.querySelector('#camera');
+            const camDir = new THREE.Vector3(0, 0, -1);
+            cam.object3D.getWorldDirection(camDir);
+
+            const forwardSpeed = vel.dot(camDir);
+            if (forwardSpeed > this.velThresh) {
+              const thrust = camDir.clone().multiplyScalar(forwardSpeed * this.thrustMult);
+              thrust.y = Math.max(0, forwardSpeed * this.thrustMult * 0.6); // Jump boost
+              this.rig.components['gorilla-locomotion'].addThrust(thrust);
+            }
+          }
+        }
+      }
+    });
+
+    // AI GORILLA - Improved Chase (speed ramps up)
+    AFRAME.registerComponent('ai-gorilla', {
+      init: function () {
+        this.playerCam = document.querySelector('#camera');
+        this.baseSpeed = 0.018;
+      },
+      tick: function () {
+        const sceneTime = this.el.sceneEl.time;
+        const speed = this.baseSpeed + (sceneTime * 0.000008); // Ramp up
+
+        const aiPos = this.el.object3D.position.clone();
+        const playerPos = this.playerCam.object3D.position.clone();
+        const dir = playerPos.clone().sub(aiPos).normalize();
+
+        aiPos.add(dir.multiplyScalar(speed));
+
+        // Simple ground/platform clamp (reuse platforms)
+        const platList = document.querySelector('#rig').components['gorilla-locomotion'].platforms;
+        for (let plat of platList) {
+          const dx = Math.abs(aiPos.x - plat.pos.x);
+          const dz = Math.abs(aiPos.z - plat.pos.z);
+          if (dx < plat.halfSize.x && dz < plat.halfSize.z && aiPos.y >= plat.pos.y - 0.1) {
+            aiPos.y = plat.pos.y + 1.6;
+            break;
+          }
+        }
+        if (aiPos.y < 1.6) aiPos.y = 1.6;
+
+        this.el.setAttribute('position', aiPos);
+
+        // Face player
+        this.el.object3D.lookAt(playerPos);
+        
+        // Bob animation
+        this.el.object3D.position.y += Math.sin(sceneTime * 0.01 + this.el.components.geometry.data.radius * 10) * 0.05;
+      }
+    });
+
+    // AI SPAWNER - Endless, faster over time
+    AFRAME.registerComponent('ai-spawner', {
+      init: function () {
+        this.spawnTimer = 0;
+        this.spawnInterval = 4500;
+        this.minInterval = 1200;
+        this.rig = document.querySelector('#rig');
+      },
+      tick: function (time, delta) {
+        this.spawnTimer += delta;
+        const sceneTime = time;
+        this.spawnInterval = Math.max(this.minInterval, 4500 - (sceneTime * 0.0007));
+
+        if (this.spawnTimer > this.spawnInterval) {
+          this.spawnAI();
+          this.spawnTimer = 0;
+        }
+      },
+      spawnAI: function () {
+        const rigPos = this.rig.object3D.position;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 25 + Math.random() * 20;
+        const height = 1.6 + Math.random() * 8;
+        const x = rigPos.x + Math.cos(angle) * dist;
+        const z = rigPos.z + Math.sin(angle) * dist;
+
+        const ai = document.createElement('a-sphere');
+        ai.classList.add('ai-gorilla');
+        ai.setAttribute('radius', 0.35 + Math.random() * 0.15);
+        ai.setAttribute('position', `${x} ${height} ${z}`);
+        ai.setAttribute('material', 'color: #CD853F; shader: flat; emissive: #FF8C00; emissiveIntensity: 0.3; roughness: 0.7');
+        ai.setAttribute('ai-gorilla', '');
+        ai.setAttribute('animation__glow', {
+          property: 'components.material.data.emissiveIntensity',
+          from: '0.3',
+          to: '0.6',
+          dir: 'alternate',
+          dur: 1500,
+          loop: true,
+          easing: 'easeInOutSine'
+        });
+        this.el.sceneEl.appendChild(ai);
+      }
+    });
+
+    // GAME MANAGER - Survival time, check tags (proximity)
+    AFRAME.registerComponent('game-manager', {
+      init: function () {
+        this.survivalTime = 0;
+        this.aiCount = 0;
+        this.hudEl = document.querySelector('#hud-text');
+        this.lastUpdate = 0;
+        this.tagDist = 1.4;
+      },
+      tick: function (time, delta) {
+        this.survivalTime = Math.floor(time / 1000);
+
+        // Update AI count & HUD sparingly
+        if (time - this.lastUpdate > 200) {
+          this.aiCount = document.querySelectorAll('.ai-gorilla').length;
+          this.hudEl.setAttribute('text', `value: SURVIVAL: ${this.survivalTime}s | AI: ${this.aiCount}`);
+          this.lastUpdate = time;
+        }
+
+        // Check if tagged (any AI too close)
+        const playerPos = document.querySelector('#camera').object3D.position;
+        const ais = document.querySelectorAll('.ai-gorilla');
+        for (let ai of ais) {
+          const aiPos = ai.object3D.position;
+          if (playerPos.distanceTo(aiPos) < this.tagDist) {
+            setTimeout(() => {
+              alert(`TAGGED! Survived ${this.survivalTime}s | Dodged ${this.aiCount} AI!`);
+              location.reload();
+            }, 100);
+            return;
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
