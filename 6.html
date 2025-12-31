@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gorilla Room GOD LOCO - REAL GT FEEL NO FLING VR</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <a-scene 
+    background="color: #87CEEB" 
+    fog="type: linear; color: #555555; near: 5; far: 35"
+    environment="preset: contact; lightPosition: 0 12 0; dressingAmount: 0">
+    
+    <!-- RIG WITH GOD LOCO -->
+    <a-entity id="rig" position="0 1.6 0" gorilla-gt-locomotion>
+      <a-entity id="camera" camera look-controls wasd-controls="acceleration: 15; fly: false">
+        <a-text id="hud-text" position="0 -0.3 -1.2" align="center" text="ROOM TIME: 0s | SPEED: 0 | PUSH ARMS BACK = BOOST" scale="0.6 0.6 0.6" color="yellow" shader="flat"></a-text>
+      </a-entity>
+      
+      <!-- INVISIBLE HANDS - PURE GT PUSH -->
+      <a-entity id="left-hand" hand-controls="hand: left; model: false" gt-push-detect position="0 0 -0.3"></a-entity>
+      <a-entity id="right-hand" hand-controls="hand: right; model: false" gt-push-detect position="0 0 -0.3"></a-entity>
+    </a-entity>
+    
+    <!-- LIGHTS INTENSE -->
+    <a-light type="ambient" intensity="0.6" color="#777777"></a-light>
+    <a-light type="directional" intensity="1.1" position="0 18 8" rotation="-60 0 0" shadow="cast: true; receive: true"></a-light>
+    <a-light type="point" position="0 10 0" intensity="1.0" color="#90EE90" distance="18" decay="0.7" animation__flicker="property: light.intensity; from: 1.0; to: 1.5; dir: alternate; dur: 800"></a-light>
+    <a-light type="point" position="10 7 -10" intensity="0.8" color="#FF4500" distance="15"></a-light>
+    <a-light type="point" position="-12 8 10" intensity="0.9" color="#00BFFF" distance="16"></a-light>
+    
+    <!-- ROOM PRISON + INDOOR PARKOUR -->
+    <a-entity id="room">
+      <a-plane position="0 0.01 0" rotation="-90 0 0" width="50" height="50" color="#228B22" shadow="receive: true" material="roughness: 0.9"></a-plane>
+      <a-plane position="0 25 0" rotation="90 0 0" width="50" height="50" color="#87CEEB"></a-plane>
+      <a-box position="0 12.5 25.1" width="50" height="25" depth="0.3" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+      <a-box position="0 12.5 -25.1" width="50" height="25" depth="0.3" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+      <a-box position="25.1 12.5 0" width="0.3" height="25" depth="50" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-25.1 12.5 0" width="0.3" height="25" depth="50" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+      
+      <!-- Indoor trees/platforms -->
+      <a-cylinder position="0 0 0" radius="1.5" height="22" color="#8B4513" shadow="cast: true"></a-cylinder>
+      <a-sphere position="0 11 0" radius="4" color="#228B22" segments-width="14" shadow="cast: true"></a-sphere>
+      <a-box position="18 4 15" width="10" height="0.6" depth="10" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-18 6 -12" width="9" height="0.6" depth="9" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="15 10 -18" width="8" height="0.6" depth="8" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-15 8 18" width="11" height="0.6" depth="11" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-cylinder position="8 10 8" radius="0.25" height="12" color="#A0522D" rotation="-90 0 0" shadow="cast: true"></a-cylinder>
+    </a-entity>
+    
+    <!-- DUST MOTES -->
+    <a-entity position="0 12 0" particle-system="particleCount: 1500; velocity: 0 -0.08 0; velocitySpread: 0.15 0.03 0.15; color: #FFFFFF,#D0D0D0; startSize: 0.03; endSize: 0.05; maxAge: 25"></a-entity>
+    
+    <a-entity id="game-manager" gt-manager></a-entity>
+    
+  </a-scene>
+
+  <script>
+    // REAL GT-INSPIRED LOCO - PUSH ONLY WHEN HANDS BACK + TOWARD BODY
+    AFRAME.registerComponent('gorilla-gt-locomotion', {
+      init: function () {
+        this.velocity = new THREE.Vector3();
+        this.maxVel = 1.5; // Controlled room speed
+        this.drag = 0.95; // Heavy air drag
+        this.groundDrag = 0.85; // Stick to surfaces
+        this.roomHalf = 24.9;
+        this.maxHeight = 24.5;
+        this.minY = 1.6;
+        this.platforms = [
+          {pos: new THREE.Vector3(18,4,15), halfSize: new THREE.Vector3(5,0.3,5)},
+          {pos: new THREE.Vector3(-18,6,-12), halfSize: new THREE.Vector3(4.5,0.3,4.5)},
+          {pos: new THREE.Vector3(15,10,-18), halfSize: new THREE.Vector3(4,0.3,4)},
+          {pos: new THREE.Vector3(-15,8,18), halfSize: new THREE.Vector3(5.5,0.3,5.5)}
+        ];
+        this.onSurface = false;
+      },
+      tick: function (time, deltaTime) {
+        deltaTime /= 1000;
+        deltaTime = Math.min(deltaTime, 0.033);
+        let pos = this.el.object3D.position.clone();
+
+        // Room collisions + bounce
+        if (Math.abs(pos.x) > this.roomHalf) { pos.x = Math.sign(pos.x) * this.roomHalf; this.velocity.x *= -0.5; }
+        if (Math.abs(pos.z) > this.roomHalf) { pos.z = Math.sign(pos.z) * this.roomHalf; this.velocity.z *= -0.5; }
+        if (pos.y > this.maxHeight) { pos.y = this.maxHeight; this.velocity.y *= -0.7; }
+
+        // Apply vel
+        this.velocity.clampLength(0, this.maxVel);
+        pos.add(this.velocity.clone().multiplyScalar(deltaTime * 60));
+
+        // Surface snap
+        this.onSurface = false;
+        for (let plat of this.platforms) {
+          const dx = Math.abs(pos.x - plat.pos.x);
+          const dy = Math.abs(pos.y - plat.pos.y);
+          const dz = Math.abs(pos.z - plat.pos.z);
+          if (dx <= plat.halfSize.x && dz <= plat.halfSize.z && dy <= 0.7) {
+            pos.y = plat.pos.y + 1.6;
+            this.onSurface = true;
+            break;
+          }
+        }
+        if (pos.y < this.minY) { pos.y = this.minY; this.onSurface = true; }
+
+        this.el.setAttribute('position', pos);
+
+        // Drag
+        const drag = this.onSurface ? this.groundDrag : this.drag;
+        this.velocity.multiplyScalar(Math.pow(drag, deltaTime * 60));
+
+        document.querySelector('#game-manager').components['gt-manager'].update(pos, this.velocity.length(), time);
+      },
+      addPush: function (pushVec) {
+        this.velocity.add(pushVec);
+      }
+    });
+
+    // GT PUSH DETECT - ONLY WHEN HAND BEHIND + MOVING FORWARD
+    AFRAME.registerComponent('gt-push-detect', {
+      init: function () {
+        this.lastPos = new THREE.Vector3();
+        this.rig = document.querySelector('#rig');
+        this.pushMult = 0.18;
+        this.minPushSpeed = 0.8;
+      },
+      tick: function () {
+        const handPos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(handPos);
+        const headPos = document.querySelector('#camera').object3D.getWorldPosition(new THREE.Vector3());
+
+        const toHand = handPos.clone().sub(headPos);
+        const forward = new THREE.Vector3(0,0,-1);
+        document.querySelector('#camera').object3D.getWorldDirection(forward);
+
+        // Hand behind body?
+        if (toHand.dot(forward) > 0.1) return;
+
+        const vel = handPos.clone().sub(this.lastPos);
+        this.lastPos.copy(handPos);
+
+        // Moving toward body (push off)
+        if (vel.dot(forward) > this.minPushSpeed) {
+          const push = forward.clone().multiplyScalar(vel.dot(forward) * this.pushMult);
+          push.y = Math.max(0, vel.y * this.pushMult * 0.8);
+          this.rig.components['gorilla-gt-locomotion'].addPush(push);
+        }
+      }
+    });
+
+    // MANAGER
+    AFRAME.registerComponent('gt-manager', {
+      init: function () {
+        this.time = 0;
+        this.speed = 0;
+        this.hudEl = document.querySelector('#hud-text');
+        this.lastUpdate = 0;
+      },
+      update: function (pos, velLen, time) {
+        this.speed = Math.floor(velLen * 20) / 10;
+        this.time = Math.floor(time / 1000);
+        if (time - this.lastUpdate > 200) {
+          this.hudEl.setAttribute('text', `value: ROOM TIME: ${this.time}s | SPEED: ${this.speed} | REAL GT PUSH LOCO`);
+          this.lastUpdate = time;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
