@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Potato Laptop Ultra Tracker - Max FPS Mode</title>
+  <style>
+    body { margin: 0; background: black; overflow: hidden; }
+    h1 { position: absolute; top: 10px; left: 20px; color: #0f0; font-size: 2rem; text-shadow: 0 0 8px #0f0; z-index: 10; }
+    #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #fps { position: absolute; bottom: 20px; left: 20px; color: #0f0; font-family: monospace; font-size: 1.8rem; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; z-index: 10; }
+    #status { position: absolute; bottom: 80px; left: 20px; color: #0f0; font-size: 1.2rem; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <h1>POTATO LAPTOP BODY TRACKER - FPS BEAST</h1>
+  <div id="fps">FPS: --</div>
+  <div id="status">Loading... Select Camo cam</div>
+
+  <video id="video" autoplay playsinline muted style="display:none;"></video>
+  <canvas id="canvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const fpsDiv = document.getElementById('fps');
+    const status = document.getElementById('status');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.onresize = resizeCanvas;
+    resizeCanvas();
+
+    const pose = new Pose({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+    });
+
+    pose.setOptions({
+      modelComplexity: 0,                // Lite = fastest for shit laptops
+      smoothLandmarks: false,            // Disable smoothing for extra speed
+      minDetectionConfidence: 0.3,       // Low for quick detect
+      minTrackingConfidence: 0.3
+    });
+
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    pose.onResults((results) => {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // NO VIDEO DRAW = MASSIVE SPEED WIN
+      // Pure black + neon skeleton only
+
+      if (results.poseLandmarks) {
+        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS,
+          {color: '#00FF00', lineWidth: 2});  // Super thin lines
+        drawLandmarks(ctx, results.poseLandmarks,
+          {color: '#FF0000', radius: 2});     // Tiny dots
+
+        status.textContent = "TRACKING SMOOTH ON POTATO HARDWARE";
+      } else {
+        status.textContent = "No body - get in frame closer!";
+      }
+
+      // Accurate FPS
+      frameCount++;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fpsDiv.textContent = `FPS: ${frameCount}`;
+        frameCount = 0;
+        lastTime = now;
+      }
+
+      ctx.restore();
+    });
+
+    const camera = new Camera(video, {
+      onFrame: async () => await pose.send({image: video}),
+      width: 640,   // Low res for weak laptops
+      height: 480
+    });
+
+    camera.start().then(() => {
+      status.textContent = "Camo phone cam LIVE - USB wired for no lag!";
+    }).catch(err => {
+      status.textContent = "Error: " + err.message + " - Check Camo/permissions";
+    });
+  </script>
+</body>
+</html>
