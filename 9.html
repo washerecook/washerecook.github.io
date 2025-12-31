@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BIG GORILLA GT - TOUCH FLOOR MONKEY GOD VR</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: black; }
+  </style>
+</head>
+<body>
+  <a-scene background="color: #87CEEB" fog="type: linear; color: #555; near: 5; far: 60" cursor="rayOrigin: mouse" raycaster="objects: .clickable">
+    
+    <!-- BIG GORILLA RIG - SCALE 2x, LOW EYES, LONG ARMS TOUCH FLOOR -->
+    <a-entity id="rig" position="0 0 0" scale="2 2 2" gorilla-loco>
+      <a-entity id="camera" camera position="0 1.2 0" look-controls="pointerLockEnabled: true" wasd-controls="acceleration: 8; fly: false">
+        <a-text id="hud" position="0 -0.3 -1.5" align="center" value="TIME: 0s | SPD: 0 | FLOOR TOUCH: YES" color="yellow" scale="0.5 0.5 0.5"></a-text>
+      </a-entity>
+      
+      <!-- LONG ASS ARMS - HANG LOW TO TOUCH FLOOR -->
+      <a-entity id="left-hand" hand-controls="hand: left; model: false; color: #8B4513" gorilla-push position="-0.8 -1.8 -0.3">
+        <a-sphere radius="0.15" color="#8B4513" material="emissive: #D2691E; emissiveIntensity: 0.5"></a-sphere>
+      </a-entity>
+      <a-entity id="right-hand" hand-controls="hand: right; model: false; color: #8B4513" gorilla-push position="0.8 -1.8 -0.3">
+        <a-sphere radius="0.15" color="#8B4513" material="emissive: #D2691E; emissiveIntensity: 0.5"></a-sphere>
+      </a-entity>
+    </a-entity>
+    
+    <!-- LIGHTS FUCKED UP GLOW -->
+    <a-light type="ambient" intensity="0.6" color="#777777"></a-light>
+    <a-light type="directional" intensity="1.3" position="0 30 15" rotation="-60 0 0" castShadow="true"></a-light>
+    <a-light type="point" position="0 20 0" intensity="1.2" color="#90EE90" distance="40" decay="0.8"></a-light>
+    
+    <!-- MASSIVE ROOM FOR BIG GORILLA -->
+    <a-entity id="room">
+      <a-plane position="0 0 0" rotation="-90 0 0" width="200" height="200" color="#228B22" material="roughness: 0.9" shadow="receive: true" class="ground"></a-plane>
+      <a-plane position="0 60 0" rotation="90 0 0" width="200" height="200" color="#87CEEB" class="ceiling"></a-plane>
+      <a-box position="0 30 100" width="200" height="60" depth="1" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      <a-box position="0 30 -100" width="200" height="60" depth="1" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      <a-box position="100 30 0" width="1" height="60" depth="200" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      <a-box position="-100 30 0" width="1" height="60" depth="200" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      
+      <!-- PARKOUR SHIT SCALED UP -->
+      <a-cylinder position="0 0 0" radius="4" height="40" color="#8B4513" shadow="cast: true" class="plat"></a-cylinder>
+      <a-sphere position="0 20 0" radius="10" color="#228B22" shadow="cast: true" class="plat"></a-sphere>
+      <a-box position="40 10 30" width="20" height="1" depth="20" color="#654321" shadow="cast: true; receive: true" class="plat"></a-box>
+      <a-box position="-40 15 -30" width="18" height="1" depth="18" color="#654321" shadow="cast: true; receive: true" class="plat"></a-box>
+    </a-entity>
+    
+    <a-entity id="manager" gorilla-manager></a-entity>
+    
+  </a-scene>
+
+  <script>
+    // BIG GORILLA LOCO - LOW CENTER, TOUCH FLOOR EASY
+    AFRAME.registerComponent('gorilla-loco', {
+      init: function () {
+        this.vel = new THREE.Vector3();
+        this.maxVel = 1.8;
+        this.dragAir = 0.95;
+        this.dragGround = 0.85;
+        this.roomHalf = 99;
+        this.ceiling = 59;
+        this.floorY = 0; // Scaled rig starts at 0
+        this.snapDist = 2.0; // BIG SNAP FOR BIG BOI
+        this.platforms = [];
+        this.ground = null;
+      },
+      tick: function (time, deltaTime) {
+        if (!this.ground) {
+          this.platforms = Array.from(document.querySelectorAll('.plat'));
+          this.ground = document.querySelector('.ground');
+        }
+        deltaTime /= 1000;
+        deltaTime = Math.min(deltaTime, 0.033);
+        let pos = this.el.object3D.position.clone();
+        
+        // BOUNDS BOUNCE
+        if (Math.abs(pos.x) > this.roomHalf) { pos.x = Math.sign(pos.x) * this.roomHalf; this.vel.x *= -0.6; }
+        if (Math.abs(pos.z) > this.roomHalf) { pos.z = Math.sign(pos.z) * this.roomHalf; this.vel.z *= -0.6; }
+        if (pos.y > this.ceiling) { pos.y = this.ceiling; this.vel.y *= -0.8; }
+        
+        // VEL APPLY
+        this.vel.clampLength(0, this.maxVel);
+        pos.add(this.vel.clone().multiplyScalar(deltaTime * 60));
+        
+        // GROUND/PLAT SNAP BIG AF
+        let onGround = false;
+        if (pos.y < this.floorY + this.snapDist) {
+          pos.y = this.floorY;
+          this.vel.y = 0;
+          onGround = true;
+        }
+        for (let plat of this.platforms) {
+          let ppos = plat.object3D.position;
+          let radius = plat.getAttribute('geometry')?.radius || (plat.getAttribute('geometry')?.width / 2) || 10;
+          let height = plat.getAttribute('geometry')?.height || 1;
+          let halfZ = plat.getAttribute('geometry')?.depth / 2 || radius;
+          let dx = Math.abs(pos.x - ppos.x);
+          let dz = Math.abs(pos.z - ppos.z);
+          if (dx < radius && dz < halfZ && pos.y < ppos.y + height/2 + this.snapDist) {
+            pos.y = ppos.y + height/2;
+            this.vel.y = 0;
+            onGround = true;
+            break;
+          }
+        }
+        
+        this.el.setAttribute('position', pos);
+        
+        // DRAG
+        let drag = onGround ? this.dragGround : this.dragAir;
+        this.vel.multiplyScalar(Math.pow(drag, deltaTime * 60));
+        
+        document.querySelector('#manager').components['gorilla-manager'].update(time, this.vel.length(), onGround);
+      },
+      addPush: function (push) {
+        push.clampLength(0, 0.15);
+        this.vel.add(push);
+      }
+    });
+
+    // PUSH RAW - ARMS BACK SWING
+    AFRAME.registerComponent('gorilla-push', {
+      init: function () {
+        this.lastPos = new THREE.Vector3();
+        this.rig = document.querySelector('#rig');
+        this.mult = 0.25;
+        this.thresh = 0.8;
+      },
+      tick: function () {
+        let hpos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(hpos);
+        let head = document.querySelector('#camera').object3D.getWorldPosition(new THREE.Vector3());
+        let fwd = new THREE.Vector3(0,0,-1);
+        document.querySelector('#camera').object3D.getWorldDirection(fwd);
+        
+        if (hpos.clone().sub(head).dot(fwd) > 0.1) return;
+        
+        let v = hpos.clone().sub(this.lastPos);
+        this.lastPos.copy(hpos);
+        
+        if (v.dot(fwd) > this.thresh) {
+          let push = fwd.clone().multiplyScalar(v.dot(fwd) * this.mult);
+          push.y = Math.max(0, v.y * this.mult * 1.2);
+          this.rig.components['gorilla-loco'].addPush(push);
+        }
+      }
+    });
+
+    // HUD MANAGER
+    AFRAME.registerComponent('gorilla-manager', {
+      init: function () {
+        this.hud = document.querySelector('#hud');
+        this.last = 0;
+      },
+      update: function (time, spd, ground) {
+        if (time - this.last > 200) {
+          let t = Math.floor(time / 1000);
+          this.hud.setAttribute('text', `value: TIME: ${t}s | SPD: ${Math.floor(spd*10)/10} | FLOOR TOUCH: ${ground ? 'YES' : 'NO'}`);
+          this.last = time;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
