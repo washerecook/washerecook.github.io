@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gorilla Room Freerun - NO FLY CONTAINED ROOM VR BEAST</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <a-scene 
+    background="color: #87CEEB" 
+    fog="type: linear; color: #444444; near: 10; far: 40"
+    environment="preset: contact; lightPosition: 0 10 0; dressingAmount: 0">
+    
+    <!-- SPAWN INSIDE ROOM - FIXED RIG NO FLY -->
+    <a-entity id="rig" position="0 1.6 0" gorilla-locomotion>
+      <a-entity id="camera" camera look-controls wasd-controls="acceleration: 20; fly: false">
+        <a-text id="hud-text" position="0 -0.3 -1.2" align="center" text="ROOM TIME: 0s | HEIGHT: 1.6m | SPEED: 0" scale="0.6 0.6 0.6" color="yellow" shader="flat"></a-text>
+        <a-text position="-1.8 -0.6 -1.2" align="left" text="SWING ARMS = CONTROLLED BOOST | WALLS BOUNCE | NO FLY JAIL" scale="0.25 0.25 0.25" color="lime"></a-text>
+      </a-entity>
+      
+      <!-- HANDS INVISIBLE - NO SPHERES -->
+      <a-entity id="left-hand" hand-controls="hand: left; model: false" thrust-emitter position="0 0 -0.3"></a-entity>
+      <a-entity id="right-hand" hand-controls="hand: right; model: false" thrust-emitter position="0 0 -0.3"></a-entity>
+    </a-entity>
+    
+    <!-- ROOM LIGHTS - INTIMATE GLOW -->
+    <a-light type="ambient" intensity="0.5" color="#666666"></a-light>
+    <a-light type="directional" intensity="1.0" position="0 15 5" rotation="-45 0 0" shadow="cast: true; receive: true; type: pcfsoft; mapSize: 1024"></a-light>
+    <a-light type="point" position="0 8 0" intensity="0.8" color="#90EE90" distance="15" decay="0.8" animation__flicker="property: light.intensity; from: 0.8; to: 1.4; dir: alternate; dur: 1000"></a-light>
+    <a-light type="point" position="8 5 -8" intensity="0.6" color="#FF4500" distance="12" decay="0.6"></a-light>
+    <a-light type="point" position="-10 6 6" intensity="0.7" color="#00BFFF" distance="14" decay="0.7"></a-light>
+    
+    <!-- CONTAINED ROOM - WALLS/FLOOR/CEILING NO ESCAPE -->
+    <a-entity id="room">
+      <!-- Floor -->
+      <a-plane position="0 0.01 0" rotation="-90 0 0" width="40" height="40" color="#228B22" shadow="receive: true" material="roughness: 0.95; repeat: 20 20"></a-plane>
+      
+      <!-- Ceiling -->
+      <a-plane position="0 20 0" rotation="90 0 0" width="40" height="40" color="#87CEEB" material="roughness: 0.8; repeat: 10 10"></a-plane>
+      
+      <!-- Walls - Wooden enclosure -->
+      <a-box position="0 10 20.1" width="40" height="20" depth="0.2" color="#8B4513" shadow="cast: true; receive: true" material="roughness: 0.9"></a-box>
+      <a-box position="0 10 -20.1" width="40" height="20" depth="0.2" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+      <a-box position="20.1 10 0" width="0.2" height="20" depth="40" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-20.1 10 0" width="0.2" height="20" depth="40" color="#8B4513" shadow="cast: true; receive: true"></a-box>
+    </a-entity>
+    
+    <!-- INDOOR PARKOUR - PLATFORMS/TREES INSIDE ROOM -->
+    <a-entity id="parkour">
+      <!-- Central pillar tree -->
+      <a-cylinder position="0 0 0" radius="1.2" height="18" color="#8B4513" shadow="cast: true" animation__sway="property: rotation.y; dir: alternate; dur: 5000; from: -2; to: 2"></a-cylinder>
+      <a-sphere position="0 9 0" radius="3" color="#228B22" segments-width="12" shadow="cast: true" animation__sway="property: rotation; dir: alternate; dur: 3000; from: -1 0 0; to: 1 0 0"></a-sphere>
+      
+      <!-- Corner platforms -->
+      <a-box position="15 3 12" width="8" height="0.5" depth="8" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-15 4 -10" width="7" height="0.5" depth="7" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="12 7 -15" width="6" height="0.5" depth="6" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="-12 5 15" width="9" height="0.5" depth="9" color="#654321" shadow="cast: true; receive: true"></a-box>
+      
+      <!-- Mid platforms -->
+      <a-box position="0 6 8" width="5" height="0.5" depth="5" color="#654321" shadow="cast: true; receive: true"></a-box>
+      <a-box position="8 9 -5" width="4" height="0.5" depth="4" color="#654321" shadow="cast: true; receive: true"></a-box>
+      
+      <!-- Branches inside -->
+      <a-cylinder position="5 8 5" radius="0.2" height="10" color="#A0522D" rotation="-90 0 0" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="-7 7 -7" radius="0.18" height="9" color="#A0522D" rotation="-90 0 0" shadow="cast: true"></a-cylinder>
+    </a-entity>
+    
+    <!-- Indoor particles - Dust motes -->
+    <a-entity position="0 10 0" particle-system="particleCount: 1000; velocity: 0 -0.05 0; velocitySpread: 0.1 0.02 0.1; color: #FFFFFF,#E0E0E0; startSize: 0.02; endSize: 0.04; acceleration: 0 -0.001 0; maxAge: 20"></a-entity>
+    
+    <a-entity id="game-manager" game-manager></a-entity>
+    
+  </a-scene>
+
+  <script>
+    // ULTRA FIXED LOCO - ROOM WALL COLLISIONS + NO FLY MAX
+    AFRAME.registerComponent('gorilla-locomotion', {
+      init: function () {
+        this.velocity = new THREE.Vector3();
+        this.maxVel = 1.8; // LOW for room control
+        this.maxThrustPerFrame = 0.08; // TINY bursts
+        this.dragXZ = 0.94;
+        this.dragY = 0.96;
+        this.groundDragMult = 1.2;
+        this.minY = 1.6;
+        this.maxHeight = 18.5; // Ceiling
+        this.roomHalf = 19.9; // Wall pos
+        this.platforms = [ // Indoor only
+          {pos: new THREE.Vector3(15,3,12), halfSize: new THREE.Vector3(4,0.25,4)},
+          {pos: new THREE.Vector3(-15,4,-10), halfSize: new THREE.Vector3(3.5,0.25,3.5)},
+          {pos: new THREE.Vector3(12,7,-15), halfSize: new THREE.Vector3(3,0.25,3)},
+          {pos: new THREE.Vector3(-12,5,15), halfSize: new THREE.Vector3(4.5,0.25,4.5)},
+          {pos: new THREE.Vector3(0,6,8), halfSize: new THREE.Vector3(2.5,0.25,2.5)},
+          {pos: new THREE.Vector3(8,9,-5), halfSize: new THREE.Vector3(2,0.25,2)}
+        ];
+        this.gameManager = document.querySelector('#game-manager').components['game-manager'];
+        this.onGround = false;
+        this.fpsCounter = 0;
+        this.lastFpsTime = 0;
+      },
+      tick: function (time, deltaTime) {
+        deltaTime = Math.min(deltaTime / 1000, 0.033);
+        let pos = this.el.object3D.position.clone();
+
+        // WALL/CEILING/ROOM COLLISIONS
+        if (Math.abs(pos.x) > this.roomHalf) {
+          pos.x = Math.sign(pos.x) * this.roomHalf;
+          this.velocity.x *= -0.6; // Bounce
+        }
+        if (Math.abs(pos.z) > this.roomHalf) {
+          pos.z = Math.sign(pos.z) * this.roomHalf;
+          this.velocity.z *= -0.6;
+        }
+        if (pos.y > this.maxHeight) {
+          pos.y = this.maxHeight;
+          this.velocity.y *= -0.8;
+        }
+
+        // Vel clamp + apply
+        this.velocity.clampLength(0, this.maxVel);
+        pos.add(this.velocity.clone().multiplyScalar(deltaTime * 60));
+
+        // Platforms/ground
+        this.onGround = false;
+        for (let plat of this.platforms) {
+          const dx = Math.abs(pos.x - plat.pos.x);
+          const dy = Math.abs(pos.y - plat.pos.y);
+          const dz = Math.abs(pos.z - plat.pos.z);
+          if (dx <= plat.halfSize.x && dz <= plat.halfSize.z && dy <= 0.6) {
+            pos.y = plat.pos.y + 1.6;
+            this.velocity.y = Math.max(0, this.velocity.y * 0.5);
+            this.onGround = true;
+            break;
+          }
+        }
+        if (pos.y < this.minY) {
+          pos.y = this.minY;
+          this.velocity.y = 0;
+          this.onGround = true;
+        }
+
+        this.el.setAttribute('position', pos);
+
+        // Drag - HARDER on ground
+        const dragMult = this.onGround ? this.groundDragMult : 1;
+        this.velocity.x *= Math.pow(this.dragXZ, deltaTime * 60 * dragMult);
+        this.velocity.z *= Math.pow(this.dragXZ, deltaTime * 60 * dragMult);
+        this.velocity.y *= Math.pow(this.dragY, deltaTime * 60);
+
+        // FPS
+        this.fpsCounter++;
+        if (time - this.lastFpsTime > 1000) {
+          this.gameManager.fps = this.fpsCounter;
+          this.fpsCounter = 0;
+          this.lastFpsTime = time;
+        }
+
+        this.gameManager.updateStats(pos, this.velocity.length(), time);
+      },
+      addThrust: function (thrust) {
+        thrust.clampLength(0, this.maxThrustPerFrame);
+        this.velocity.add(thrust);
+      }
+    });
+
+    // THRUST TIGHT - NO BUILDUP
+    AFRAME.registerComponent('thrust-emitter', {
+      init: function () {
+        this.posHistory = [];
+        this.rig = document.querySelector('#rig');
+        this.thrustMult = 0.09; // LOW for room
+        this.velThreshold = 1.1;
+        this.historySize = 3; // ULTRA SHORT
+      },
+      tick: function (time, deltaTime) {
+        deltaTime = Math.min(deltaTime / 1000, 0.033);
+        const worldPos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(worldPos);
+        this.posHistory.push({pos: worldPos.clone(), time});
+        if (this.posHistory.length > this.historySize) this.posHistory.shift();
+
+        if (this.posHistory.length === this.historySize) {
+          const dt = (this.posHistory[this.historySize-1].time - this.posHistory[0].time) / 1000 || 0.016;
+          const vel = this.posHistory[this.historySize-1].pos.clone().sub(this.posHistory[0].pos).multiplyScalar(1 / dt);
+
+          const cam = document.querySelector('#camera');
+          const camForward = new THREE.Vector3(0, 0, -1);
+          cam.object3D.getWorldDirection(camForward);
+
+          const forwardProj = vel.dot(camForward);
+          if (forwardProj > this.velThreshold) {
+            const thrust = camForward.clone().multiplyScalar(forwardProj * this.thrustMult);
+            thrust.y = Math.max(0, vel.y * this.thrustMult * 1.2); // Controlled jump
+            this.rig.components['gorilla-locomotion'].addThrust(thrust);
+          }
+        }
+      }
+    });
+
+    // MANAGER - SPEED INSTEAD DIST
+    AFRAME.registerComponent('game-manager', {
+      init: function () {
+        this.time = 0;
+        this.currentHeight = 1.6;
+        this.speed = 0;
+        this.fps = 60;
+        this.hudEl = document.querySelector('#hud-text');
+        this.lastUpdate = 0;
+      },
+      updateStats: function (pos, velLen, time) {
+        this.currentHeight = Math.floor(pos.y * 10) / 10;
+        this.speed = Math.floor(velLen * 10) / 10;
+        this.time = Math.floor(time / 1000);
+
+        if (time - this.lastUpdate > 166) {
+          this.hudEl.setAttribute('text', `value: ROOM TIME: ${this.time}s | HEIGHT: ${this.currentHeight}m | SPEED: ${this.speed}`);
+          this.lastUpdate = time;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
