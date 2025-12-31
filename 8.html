@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GT Fan Room - WebXR Ape Crack</title>
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <a-scene background="color: #87CEEB" fog="type: linear; color: #555; near: 5; far: 35">
+    
+    <!-- RIG - GT LOCO BEAST -->
+    <a-entity id="rig" position="0 1.6 0" gt-loco>
+      <a-entity id="camera" camera look-controls wasd-controls="acceleration: 10; fly: false">
+        <a-text id="hud" position="0 -0.3 -1.2" align="center" text="TIME: 0s | SPD: 0 | GROUND: YES" scale="0.55 0.55 0.55" color="yellow"></a-text>
+      </a-entity>
+      
+      <!-- INVISIBLE HANDS - PUSH RAW -->
+      <a-entity id="left" hand-controls="hand: left; model: false" gt-push position="0 0 -0.3"></a-entity>
+      <a-entity id="right" hand-controls="hand: right; model: false" gt-push position="0 0 -0.3"></a-entity>
+    </a-entity>
+    
+    <!-- LIGHTS FUCKED UP GLOW -->
+    <a-light type="ambient" intensity="0.6" color="#777"></a-light>
+    <a-light type="directional" intensity="1.2" position="0 18 8" rotation="-60 0 0" shadow="cast: true; receive: true"></a-light>
+    <a-light type="point" position="0 10 0" intensity="1.0" color="#90EE90" distance="18" animation__flick="property: intensity; from:1; to:1.6; dir:alternate; dur:700"></a-light>
+    
+    <!-- ROOM PRISON + PARKOUR SHIT -->
+    <a-entity id="room">
+      <a-plane position="0 0.01 0" rotation="-90 0 0" width="50" height="50" color="#228B22" shadow="receive: true" material="roughness:0.9" class="ground"></a-plane>
+      <a-plane position="0 25 0" rotation="90 0 0" width="50" height="50" color="#87CEEB" class="ceiling"></a-plane>
+      <a-box position="0 12.5 25.1" width="50" height="25" depth="0.3" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      <a-box position="0 12.5 -25.1" width="50" height="25" depth="0.3" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      <a-box position="25.1 12.5 0" width="0.3" height="25" depth="50" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      <a-box position="-25.1 12.5 0" width="0.3" height="25" depth="50" color="#8B4513" shadow="cast: true" class="wall"></a-box>
+      
+      <!-- TREES/PLATS FUCKED UP -->
+      <a-cylinder position="0 0 0" radius="1.5" height="22" color="#8B4513" shadow="cast: true" class="plat"></a-cylinder>
+      <a-sphere position="0 11 0" radius="4" color="#228B22" shadow="cast: true" class="plat"></a-sphere>
+      <a-box position="18 4 15" width="10" height="0.6" depth="10" color="#654321" shadow="cast: true; receive: true" class="plat"></a-box>
+      <a-box position="-18 6 -12" width="9" height="0.6" depth="9" color="#654321" shadow="cast: true; receive: true" class="plat"></a-box>
+    </a-entity>
+    
+    <a-entity id="manager" gt-manager></a-entity>
+  </a-scene>
+
+  <script>
+    AFRAME.registerComponent('gt-loco', {
+      init() {
+        this.vel = new THREE.Vector3();
+        this.maxVel = 1.4;
+        this.dragAir = 0.955;
+        this.dragGround = 0.88;
+        this.roomHalf = 24.8;
+        this.ceiling = 24.4;
+        this.floorY = 1.6;
+        this.snapDist = 1.5; // GOD SNAP
+        this.platforms = document.querySelectorAll('.plat');
+        this.ground = document.querySelector('.ground');
+        this.ceilingEl = document.querySelector('.ceiling');
+        this.walls = document.querySelectorAll('.wall');
+      },
+      tick(time, dt) {
+        dt /= 1000; dt = Math.min(dt, 0.033);
+        let pos = this.el.object3D.position.clone();
+        // WALL/CEIL BOUNCE HARD
+        if (Math.abs(pos.x) > this.roomHalf) { pos.x = Math.sign(pos.x)*this.roomHalf; this.vel.x *= -0.6; }
+        if (Math.abs(pos.z) > this.roomHalf) { pos.z = Math.sign(pos.z)*this.roomHalf; this.vel.z *= -0.6; }
+        if (pos.y > this.ceiling) { pos.y = this.ceiling; this.vel.y *= -0.8; }
+        // VEL APPLY
+        this.vel.clampLength(0, this.maxVel);
+        pos.add(this.vel.clone().multiplyScalar(dt*60));
+        // GROUND SNAP GOD
+        let onGround = false;
+        if (pos.y < this.floorY + this.snapDist) {
+          pos.y = this.floorY;
+          this.vel.y = 0;
+          onGround = true;
+        }
+        // PLATS SNAP
+        for (let plat of this.platforms) {
+          const ppos = plat.object3D.position;
+          const dx = Math.abs(pos.x - ppos.x);
+          const dz = Math.abs(pos.z - ppos.z);
+          const platRadius = plat.getAttribute('geometry').radius || (plat.getAttribute('geometry').width / 2) || 5;
+          const platHeight = plat.getAttribute('geometry').height || 0.6;
+          const platHalfZ = plat.getAttribute('geometry').depth / 2 || platRadius;
+          if (dx < platRadius && dz < platHalfZ && pos.y < ppos.y + platHeight/2 + this.snapDist) {
+            pos.y = ppos.y + platHeight/2 + 1.6;
+            this.vel.y = 0;
+            onGround = true;
+            break;
+          }
+        }
+        this.el.setAttribute('position', pos);
+        // DRAG RAW
+        const drag = onGround ? this.dragGround : this.dragAir;
+        this.vel.multiplyScalar(Math.pow(drag, dt*60));
+        document.querySelector('#manager').components['gt-manager'].update(time, this.vel.length(), onGround);
+      },
+      addPush(push) {
+        push.clampLength(0, 0.12);
+        this.vel.add(push);
+      }
+    });
+    AFRAME.registerComponent('gt-push', {
+      init() {
+        this.lastPos = new THREE.Vector3();
+        this.rig = document.querySelector('#rig');
+        this.mult = 0.22;
+        this.thresh = 0.85;
+      },
+      tick() {
+        const hpos = new THREE.Vector3();
+        this.el.object3D.getWorldPosition(hpos);
+        const headPos = document.querySelector('#camera').object3D.getWorldPosition(new THREE.Vector3());
+        const fwd = new THREE.Vector3(0,0,-1);
+        document.querySelector('#camera').object3D.getWorldDirection(fwd);
+        if (hpos.clone().sub(headPos).dot(fwd) > 0.12) return;
+        const v = hpos.clone().sub(this.lastPos);
+        this.lastPos.copy(hpos);
+        if (v.dot(fwd) > this.thresh) {
+          const push = fwd.clone().multiplyScalar(v.dot(fwd) * this.mult);
+          push.y = Math.max(0, v.y * this.mult * 0.9);
+          this.rig.components['gt-loco'].addPush(push);
+        }
+      }
+    });
+    AFRAME.registerComponent('gt-manager', {
+      init() { this.hud = document.querySelector('#hud'); this.last = 0; },
+      update(time, spd, ground) {
+        if (time - this.last > 200) {
+          const t = Math.floor(time/1000);
+          this.hud.setAttribute('text', `value: TIME: ${t}s | SPD: ${Math.floor(spd*10)/10} | GROUND: ${ground ? 'YES' : 'NO'}`);
+          this.last = time;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
