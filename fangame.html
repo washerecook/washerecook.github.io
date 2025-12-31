@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gorilla Tag Fan Game - VR Monkey Tag Mayhem</title>
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.4.0/dist/aframe-extras.min.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <a-scene 
+    background="color: #228B22" 
+    fog="type: linear; color: #006400; near: 20; far: 80"
+    environment="preset: forest; lightPosition: 0 10 -10; groundColor: #0a4a0a; groundTexture: none">
+    
+    <!-- Player Rig - Gorilla arms visible -->
+    <a-entity id="rig">
+      <a-entity id="camera" camera position="0 1.6 0" look-controls>
+        <!-- HUD -->
+        <a-text id="score-text" position="0 -0.3 -1.2" align="center" text="TAGS: 0 | TIME: 60" scale="0.5 0.5 0.5" color="yellow"></a-text>
+        <a-text position="-1.5 -0.6 -1.2" align="left" text="TRIGGER TO TAG | SWING ARMS TO MOVE" scale="0.3 0.3 0.3" color="white"></a-text>
+      </a-entity>
+      
+      <!-- Gorilla Hands/Arms - Low poly fists -->
+      <a-entity id="left-hand" hand-controls="hand: left; model: lowPoly" 
+        gorilla-locomotion="side: left" 
+        raycaster="far: 2; objects: .ai-gorilla" 
+        tagger>
+        <a-sphere position="0 0 -0.2" radius="0.08" color="#8B4513" material="shader: flat"></a-sphere> <!-- Fist -->
+      </a-entity>
+      <a-entity id="right-hand" hand-controls="hand: right; model: lowPoly" 
+        gorilla-locomotion="side: right" 
+        raycaster="far: 2; objects: .ai-gorilla" 
+        tagger>
+        <a-sphere position="0 0 -0.2" radius="0.08" color="#8B4513" material="shader: flat"></a-sphere>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Lights -->
+    <a-light type="ambient" intensity="0.4" color="#556B2F"></a-light>
+    <a-light type="directional" intensity="0.8" position="1 10 1" castShadow="true"></a-light>
+    
+    <!-- Forest Map - Trees & Platforms -->
+    <a-entity id="map">
+      <a-cylinder position="0 0 0" radius="0.5" height="20" color="#8B4513" shadow="cast: true; receive: true"></a-cylinder> <!-- Main tree trunk -->
+      <a-sphere position="0 8 0" radius="4" color="#228B22" segments-width="8" segments-height="8" shadow="cast: true"></a-sphere> <!-- Foliage -->
+      
+      <!-- More trees/platforms -->
+      <a-cylinder position="8 0 5" radius="0.4" height="15" color="#8B4513"></a-cylinder>
+      <a-sphere position="8 6 5" radius="3" color="#228B22" segments-width="8" segments-height="8"></a-sphere>
+      <a-cylinder position="-10 0 -3" radius="0.3" height="12" color="#8B4513"></a-cylinder>
+      <a-sphere position="-10 5 -3" radius="2.5" color="#228B22" segments-width="8" segments-height="8"></a-sphere>
+      <a-plane position="0 0 -15" rotation="-90 0 0" width="50" height="50" color="#0a4a0a" shadow="receive: true"></a-plane> <!-- Ground -->
+    </a-entity>
+    
+    <!-- Game Manager -->
+    <a-entity id="game-manager" game-manager></a-entity>
+    <a-entity id="ai-spawner" ai-spawner></a-entity>
+    
+  </a-scene>
+
+  <script>
+    // GORILLA LOCOMOTION - Swing arms to thrust forward (Gorilla Tag style)
+    AFRAME.registerComponent('gorilla-locomotion', {
+      schema: { side: {default: 'left'} },
+      init: function () {
+        this.velocity = {x: 0, y: 0, z: 0};
+        this.rig = document.querySelector('#rig');
+        this.thrustForce = 0.015;
+        this.drag = 0.92;
+      },
+      tick: function () {
+        const controllerPos = this.el.object3D.getWorldPosition(new THREE.Vector3());
+        const rigPos = this.rig.object3D.getWorldPosition(new THREE.Vector3());
+        const dir = controllerPos.clone().sub(rigPos).normalize();
+        
+        // Thrust when hand swings forward (Y velocity up)
+        const handVel = this.el.object3D.getWorldPosition(new THREE.Vector3()).distanceTo(rigPos);
+        if (dir.y > 0.3) { // Forward swing
+          this.velocity.x += dir.x * this.thrustForce;
+          this.velocity.z += dir.z * this.thrustForce;
+          this.velocity.y += Math.abs(dir.y) * this.thrustForce * 0.5; // Jump boost
+        }
+        
+        // Apply velocity with drag
+        rigPos.x += this.velocity.x;
+        rigPos.y += this.velocity.y;
+        rigPos.z += this.velocity.z;
+        this.velocity.x *= this.drag;
+        this.velocity.y *= 0.95;
+        this.velocity.z *= this.drag;
+        
+        // Ground clamp
+        if (rigPos.y < 1.6) rigPos.y = 1.6;
+        
+        this.rig.setAttribute('position', rigPos);
+      }
+    });
+
+    // TAGGER - Trigger to tag nearby AI
+    AFRAME.registerComponent('tagger', {
+      init: function () {
+        this.el.addEventListener('triggerdown', () => {
+          const raycaster = this.el.components.raycaster;
+          if (raycaster.intersections.length > 0) {
+            const hit = raycaster.intersections[0].object.el;
+            if (hit.classList.contains('ai-gorilla')) {
+              hit.emit('tagged');
+            }
+          }
+        });
+      }
+    });
+
+    // AI GORILLA - Flees from player, chases if close
+    AFRAME.registerComponent('ai-gorilla', {
+      init: function () {
+        this.playerCam = document.querySelector('#camera');
+        this.speed = 0.12;
+        this.fleeDist = 5;
+        this.chaseDist = 3;
+      },
+      tick: function () {
+        const aiPos = this.el.object3D.position;
+        const playerPos = this.playerCam.object3D.position;
+        const dist = aiPos.distanceTo(playerPos);
+        
+        let dir;
+        if (dist < this.chaseDist) {
+          // Chase player
+          dir = playerPos.clone().sub(aiPos).normalize();
+        } else {
+          // Flee/random
+          dir = aiPos.clone().sub(playerPos).normalize().negate();
+          dir.x += (Math.random() - 0.5) * 0.5;
+          dir.z += (Math.random() - 0.5) * 0.5;
+          dir.normalize();
+        }
+        
+        aiPos.add(dir.multiplyScalar(this.speed));
+        this.el.setAttribute('position', aiPos);
+        
+        // Bounce off trees/ground
+        if (aiPos.y < 1) aiPos.y = 1 + Math.random();
+        
+        // Rotate to face dir
+        this.el.object3D.lookAt(aiPos.x + dir.x, aiPos.y, aiPos.z + dir.z);
+      }
+    });
+
+    // SPAWNER - Spawn AI gorillas around map
+    AFRAME.registerComponent('ai-spawner', {
+      init: function () {
+        this.spawnPoints = [
+          {x: 5, y: 2, z: 10}, {x: -8, y: 3, z: 8}, {x: 12, y: 2, z: -5},
+          {x: -15, y: 4, z: -10}, {x: 0, y: 5, z: 20}, {x: 20, y: 3, z: 0}
+        ];
+        this.spawnTimer = 0;
+      },
+      tick: function (time) {
+        this.spawnTimer += 16;
+        if (this.spawnTimer > 3000) { // Spawn every 3s
+          this.spawnAI();
+          this.spawnTimer = 0;
+        }
+      },
+      spawnAI: function () {
+        const point = this.spawnPoints[Math.floor(Math.random() * this.spawnPoints.length)];
+        const ai = document.createElement('a-sphere');
+        ai.classList.add('ai-gorilla');
+        ai.setAttribute('radius', 0.4);
+        ai.setAttribute('position', `${point.x + (Math.random()-0.5)*4} ${point.y} ${point.z + (Math.random()-0.5)*4}`);
+        ai.setAttribute('material', 'color: #CD853F; shader: flat; emissive: #8B4513; emissiveIntensity: 0.2');
+        ai.setAttribute('ai-gorilla', '');
+        ai.setAttribute('animation__bob', {
+          property: 'position',
+          dir: 'alternate',
+          dur: 1000,
+          from: '0 0 0',
+          to: '0 0.2 0',
+          loop: true,
+          easing: 'easeInOutSine'
+        });
+        this.el.sceneEl.appendChild(ai);
+      }
+    });
+
+    // GAME MANAGER - Score, timer, tagged check
+    AFRAME.registerComponent('game-manager', {
+      init: function () {
+        this.score = 0;
+        this.timeLeft = 60;
+        this.scoreEl = document.querySelector('#score-text');
+        this.updateHUD();
+        this.tickTimer = 0;
+        this.playerCam = document.querySelector('#camera');
+      },
+      tick: function (time, delta) {
+        this.tickTimer += delta;
+        if (this.tickTimer > 1000) {
+          this.timeLeft--;
+          this.tickTimer = 0;
+          this.updateHUD();
+          if (this.timeLeft <= 0) {
+            alert(`GAME OVER! Final Tags: ${this.score}`); // Simple restart
+            location.reload();
+          }
+        }
+        
+        // Check if AI tagged player (close proximity)
+        const els = document.querySelectorAll('.ai-gorilla');
+        for (let el of els) {
+          if (el.object3D.position.distanceTo(this.playerCam.object3D.position) < 1.5) {
+            alert(`TAGGED! Score: ${this.score}`);
+            location.reload();
+          }
+        }
+      },
+      addTag: function () {
+        this.score++;
+        this.updateHUD();
+      },
+      updateHUD: function () {
+        this.scoreEl.setAttribute('text', `value: TAGS: ${this.score} | TIME: ${this.timeLeft}`);
+      }
+    });
+
+    // Wire up tagging to score
+    AFRAME.registerComponent('scene-listener', {
+      init: function () {
+        this.el.addEventListener('child-attached', (evt) => {
+          if (evt.detail.el.classList.contains('ai-gorilla')) {
+            evt.detail.el.addEventListener('tagged', () => {
+              document.querySelector('#game-manager').components['game-manager'].addTag();
+              // Remove tagged AI
+              setTimeout(() => {
+                if (evt.detail.el.parentNode) evt.detail.el.parentNode.removeChild(evt.detail.el);
+              }, 200);
+            });
+          }
+        });
+      }
+    });
+    document.querySelector('a-scene').setAttribute('scene-listener', '');
+  </script>
+</body>
+</html>
