@@ -1,98 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Potato Laptop Ultra Tracker - Max FPS Mode</title>
-  <style>
-    body { margin: 0; background: black; overflow: hidden; }
-    h1 { position: absolute; top: 10px; left: 20px; color: #0f0; font-size: 2rem; text-shadow: 0 0 8px #0f0; z-index: 10; }
-    #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    #fps { position: absolute; bottom: 20px; left: 20px; color: #0f0; font-family: monospace; font-size: 1.8rem; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; z-index: 10; }
-    #status { position: absolute; bottom: 80px; left: 20px; color: #0f0; font-size: 1.2rem; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; z-index: 10; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuckin' Skeleton Tracker - MediaPipe Edition</title>
+    <style>
+        body { margin: 0; background: black; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; color: white; font-family: Arial; }
+        #container { position: relative; }
+        video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        canvas { z-index: 1; }
+        h1 { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
+        p { max-width: 800px; text-align: center; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0"></script>
 </head>
 <body>
-  <h1>POTATO LAPTOP BODY TRACKER - FPS BEAST</h1>
-  <div id="fps">FPS: --</div>
-  <div id="status">Loading... Select Camo cam</div>
+    <h1>SKELETON TRACKER - GET NAKED AND MOVE, BITCH</h1>
+    <p>Stand in front of the camera. Full body visible = best skeleton. Works on phone too.</p>
+    <div id="container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
 
-  <video id="video" autoplay playsinline muted style="display:none;"></video>
-  <canvas id="canvas"></canvas>
+    <script type="module">
+        const { PoseLandmarker, FilesetResolver, DrawingUtils } = window.vision;
 
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
 
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const fpsDiv = document.getElementById('fps');
-    const status = document.getElementById('status');
+        let poseLandmarker;
+        let running = false;
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.onresize = resizeCanvas;
-    resizeCanvas();
+        async function createPoseLandmarker() {
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+            );
+            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+                    delegate: "GPU"
+                },
+                runningMode: "VIDEO",
+                numPoses: 1
+            });
+            startCamera();
+        }
 
-    const pose = new Pose({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-    });
+        async function startCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.addEventListener("loadeddata", predict);
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        }
 
-    pose.setOptions({
-      modelComplexity: 0,                // Lite = fastest for shit laptops
-      smoothLandmarks: false,            // Disable smoothing for extra speed
-      minDetectionConfidence: 0.3,       // Low for quick detect
-      minTrackingConfidence: 0.3
-    });
+        async function predict() {
+            if (!poseLandmarker) return;
 
-    let lastTime = performance.now();
-    let frameCount = 0;
+            const startTimeMs = performance.now();
+            const results = await poseLandmarker.detectForVideo(video, startTimeMs);
 
-    pose.onResults((results) => {
-      ctx.save();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const drawingUtils = new DrawingUtils(ctx);
 
-      // NO VIDEO DRAW = MASSIVE SPEED WIN
-      // Pure black + neon skeleton only
+            if (results.landmarks.length > 0) {
+                drawingUtils.drawConnectors(results.landmarks[0], PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 6 });
+                drawingUtils.drawLandmarks(results.landmarks[0], { color: "#FF0000", radius: 5 });
+            }
 
-      if (results.poseLandmarks) {
-        drawConnectors(ctx, results.poseLandmarks, POSE_CONNECTIONS,
-          {color: '#00FF00', lineWidth: 2});  // Super thin lines
-        drawLandmarks(ctx, results.poseLandmarks,
-          {color: '#FF0000', radius: 2});     // Tiny dots
+            ctx.restore();
 
-        status.textContent = "TRACKING SMOOTH ON POTATO HARDWARE";
-      } else {
-        status.textContent = "No body - get in frame closer!";
-      }
+            if (running) requestAnimationFrame(predict);
+        }
 
-      // Accurate FPS
-      frameCount++;
-      const now = performance.now();
-      if (now - lastTime >= 1000) {
-        fpsDiv.textContent = `FPS: ${frameCount}`;
-        frameCount = 0;
-        lastTime = now;
-      }
-
-      ctx.restore();
-    });
-
-    const camera = new Camera(video, {
-      onFrame: async () => await pose.send({image: video}),
-      width: 640,   // Low res for weak laptops
-      height: 480
-    });
-
-    camera.start().then(() => {
-      status.textContent = "Camo phone cam LIVE - USB wired for no lag!";
-    }).catch(err => {
-      status.textContent = "Error: " + err.message + " - Check Camo/permissions";
-    });
-  </script>
+        createPoseLandmarker().then(() => {
+            running = true;
+        });
+    </script>
 </body>
 </html>
