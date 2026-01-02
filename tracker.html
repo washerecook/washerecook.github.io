@@ -6,37 +6,40 @@
     <title>Skeleton Tracker</title>
     <style>
         body { margin: 0; background: black; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; color: white; font-family: Arial; }
-        #container { position: relative; max-width: 100%; }
+        #container { position: relative; max-width: 100%; display: none; } /* Hidden until camera on */
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         canvas { z-index: 1; }
         h1 { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
-        p { max-width: 800px; text-align: center; }
-        #fps { position: absolute; top: 10px; left: 10px; z-index: 2; color: white; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; font-size: 18px; }
-        #stroke-counter { position: absolute; top: 50px; left: 10px; z-index: 2; color: #ff0000; background: rgba(0,0,0,0.5); padding: 10px 15px; border-radius: 5px; font-size: 32px; font-weight: bold; }
-        #cum-button { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 15px 30px; background: #ff0066; color: white; border: none; border-radius: 10px; font-size: 24px; cursor: pointer; }
-        #torture-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 3; font-size: 60px; color: yellow; text-shadow: 0 0 20px black; animation: shake 0.3s infinite, flash 0.2s infinite; }
-        #cum-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.6); display: none; justify-content: center; align-items: center; z-index: 3; font-size: 80px; color: #ff0066; text-shadow: 0 0 15px white; animation: splatter 2s; }
-        @keyframes shake { 0% { transform: translate(2px, 2px) rotate(0deg); } 10% { transform: translate(-2px, -4px) rotate(-2deg); } 20% { transform: translate(-6px, 0px) rotate(2deg); } 30% { transform: translate(6px, 4px) rotate(0deg); } 40% { transform: translate(2px, -2px) rotate(2deg); } 50% { transform: translate(-2px, 4px) rotate(-2deg); } 60% { transform: translate(-6px, 2px) rotate(0deg); } 70% { transform: translate(6px, 2px) rotate(-2deg); } 80% { transform: translate(-2px, -2px) rotate(2deg); } 90% { transform: translate(2px, 4px) rotate(0deg); } 100% { transform: translate(2px, 2px) rotate(0deg); } }
-        @keyframes flash { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
-        @keyframes splatter { 0% { opacity: 0; transform: scale(0.5); } 30% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1); } }
+        #start-button { padding: 20px 40px; font-size: 30px; background: #ff0000; color: white; border: none; border-radius: 10px; cursor: pointer; margin-bottom: 20px; }
+        #fps, #stroke-counter { position: absolute; z-index: 2; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; }
+        #fps { top: 10px; left: 10px; color: white; font-size: 18px; }
+        #stroke-counter { top: 50px; left: 10px; color: #ff0000; font-size: 24px; font-weight: bold; }
+        #cum-button { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 15px 30px; background: #ff0066; color: white; border: none; border-radius: 10px; font-size: 24px; cursor: pointer; }
+        #torture-overlay, #cum-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 3; font-size: 50px; }
+        #torture-overlay { background: rgba(255,0,0,0.8); color: white; animation: shake 0.3s infinite; }
+        #cum-overlay { background: rgba(255,255,255,0.6); color: #ff0066; animation: splatter 1.5s; }
+        @keyframes shake { 0%,100% { transform: translate(0); } 25% { transform: translate(10px, -10px); } 50% { transform: translate(-10px, 10px); } 75% { transform: translate(10px, 10px); } }
+        @keyframes splatter { 0% { opacity: 0; transform: scale(0); } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(1); } }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0"></script>
 </head>
 <body>
-    <h1>Skeleton Tracker</h1>
-    <p>Get your full body in frame and start stroking. Don't cum before 100 or you'll get virtually tazed.</p>
+    <h1>Skeleton Stroke Tracker</h1>
+    <button id="start-button">TURN ON CAMERA & START STROKING</button>
+    <p id="instructions" style="display:none; text-align:center; max-width:90%;">Get full body in view. Stroke that dick. Hit 100 without cumming = virtual taze torture.</p>
+
     <div id="container">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
         <div id="fps">FPS: 0</div>
         <div id="stroke-counter">Strokes: 0</div>
         <button id="cum-button">I CUMMED 💦</button>
-        <div id="torture-overlay">TAZED BITCH ⚡⚡⚡</div>
-        <div id="cum-overlay">GOOD BOY CUM 💦💦💦</div>
+        <div id="torture-overlay">FAILED - TAZED BITCH ⚡⚡⚡</div>
+        <div id="cum-overlay">GOOD BOY - CUMMED 💦💦💦</div>
     </div>
 
-    <audio id="zap-sound">
-        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAA" type="audio/wav">
+    <audio id="zap-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAAA" type="audio/wav">
     </audio>
 
     <script type="module">
@@ -45,6 +48,9 @@
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
+        const container = document.getElementById("container");
+        const startButton = document.getElementById("start-button");
+        const instructions = document.getElementById("instructions");
         const fpsElement = document.getElementById("fps");
         const strokeCounter = document.getElementById("stroke-counter");
         const cumButton = document.getElementById("cum-button");
@@ -54,72 +60,45 @@
 
         let poseLandmarker;
         let running = false;
-        let lastTime = performance.now();
-        let fps = 0;
         let strokes = 0;
-        let wristYHistory = [];
-        let inStroke = false;
-        let strokeDirectionUp = false;
+        let lastHandY = 0;
+        let strokingUp = false;
+        let lastTime = performance.now();
 
-        cumButton.onclick = () => {
-            strokes = 0;
-            updateStrokeDisplay();
-            cumOverlay.style.display = 'flex';
-            setTimeout(() => cumOverlay.style.display = 'none', 3000);
-        };
-
-        function updateStrokeDisplay() {
-            strokeCounter.textContent = `Strokes: ${strokes}`;
-            if (strokes >= 100) {
-                tortureOverlay.style.display = 'flex';
-                zapSound.play();
-                document.body.style.animation = 'shake 0.5s infinite';
-                setTimeout(() => {
-                    tortureOverlay.style.display = 'none';
-                    document.body.style.animation = '';
-                    strokes = 0;
-                    updateStrokeDisplay();
-                }, 5000);
-            }
-        }
-
-        async function createPoseLandmarker() {
-            const vision = await FilesetResolver.forVisionTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-            );
-            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                numPoses: 1
-            });
-            startCamera();
-        }
-
-        async function startCamera() {
+        startButton.onclick = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 video.srcObject = stream;
                 video.addEventListener("loadedmetadata", () => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
+                    container.style.display = "block";
+                    startButton.style.display = "none";
+                    instructions.style.display = "block";
                     running = true;
                     predict();
                 });
             } catch (err) {
-                alert("Camera access failed. Use HTTPS (GitHub Pages link) and allow permission.");
+                alert("Camera still blocked, nigga. Go to Chrome settings > Site settings > Camera > Allow this site.");
             }
+        };
+
+        async function createPoseLandmarker() {
+            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm");
+            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", delegate: "GPU" },
+                runningMode: "VIDEO",
+                numPoses: 1
+            });
         }
 
         async function predict(currentTime = performance.now()) {
-            if (!poseLandmarker || !running) return;
+            if (!running) return;
 
+            // FPS
             const delta = currentTime - lastTime;
             if (delta > 1000) {
-                fps = Math.round(1000 / delta * 30); // rough estimate
-                fpsElement.textContent = `FPS: ${fps}`;
+                fpsElement.textContent = `FPS: ${Math.round(1000 / delta * 10)}`;
                 lastTime = currentTime;
             }
 
@@ -134,52 +113,40 @@
                 drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 6 });
                 drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", radius: 5 });
 
-                // Stroke detection logic
-                const leftWrist = landmarks[15];
-                const rightWrist = landmarks[16];
+                // Stroke detection - right wrist (16) near crotch (avg of hips 23/24)
+                const wrist = landmarks[16]; // right wrist
                 const leftHip = landmarks[23];
                 const rightHip = landmarks[24];
-                const nose = landmarks[0];
+                const crotchY = (leftHip.y + rightHip.y) / 2;
+                const handY = wrist.y;
 
-                const wrist = rightWrist.visibility > leftWrist.visibility ? rightWrist : leftWrist;
-                if (wrist.visibility > 0.5) {
-                    const hipY = (leftHip.y + rightHip.y) / 2;
-                    const crotchZoneTop = hipY - 0.1;
-                    const crotchZoneBottom = hipY + 0.2;
+                const nearCrotch = Math.abs(wrist.x - (leftHip.x + rightHip.x)/2) < 0.15 && wrist.visibility > 0.7;
 
-                    if (wrist.y > crotchZoneTop && wrist.y < crotchZoneBottom) {
-                        wristYHistory.push(wrist.y);
-                        if (wristYHistory.length > 10) wristYHistory.shift();
-
-                        if (wristYHistory.length > 5) {
-                            const recentAvg = wristYHistory.slice(-5).reduce((a,b)=>a+b)/5;
-                            const prevAvg = wristYHistory.slice(0,5).reduce((a,b)=>a+b)/5;
-
-                            if (inStroke) {
-                                if (strokeDirectionUp && recentAvg < prevAvg - 0.02) {
-                                    strokes++;
-                                    updateStrokeDisplay();
-                                    inStroke = false;
-                                } else if (!strokeDirectionUp && recentAvg > prevAvg + 0.02) {
-                                    inStroke = false;
-                                }
-                            } else {
-                                if (recentAvg > prevAvg + 0.02) {
-                                    inStroke = true;
-                                    strokeDirectionUp = false;
-                                } else if (recentAvg < prevAvg - 0.02) {
-                                    inStroke = true;
-                                    strokeDirectionUp = true;
-                                }
-                            }
+                if (nearCrotch) {
+                    if (strokingUp && handY < lastHandY - 0.05) { // full down->up cycle
+                        strokes++;
+                        strokeCounter.textContent = `Strokes: ${strokes}`;
+                        strokingUp = false;
+                        if (strokes >= 100) {
+                            tortureOverlay.style.display = "flex";
+                            zapSound.play();
+                            setTimeout(() => { tortureOverlay.style.display = "none"; strokes = 0; strokeCounter.textContent = "Strokes: 0"; }, 4000);
                         }
+                    } else if (handY > lastHandY + 0.05) {
+                        strokingUp = true;
                     }
+                    lastHandY = handY;
                 }
             }
 
             ctx.restore();
             requestAnimationFrame(predict);
         }
+
+        cumButton.onclick = () => {
+            cumOverlay.style.display = "flex";
+            setTimeout(() => { cumOverlay.style.display = "none"; strokes = 0; strokeCounter.textContent = "Strokes: 0"; }, 3000);
+        };
 
         createPoseLandmarker();
     </script>
