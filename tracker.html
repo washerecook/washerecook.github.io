@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pure Skeleton + Hand + Face Tracker</title>
+    <title>Advanced Full Body Tracker</title>
     <style>
         body { margin: 0; background: black; color: white; font-family: Arial; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
         #container { position: relative; width: 100vw; height: 100vh; display: none; }
@@ -14,7 +14,8 @@
     </style>
 </head>
 <body>
-    <h1 style="color:#00ff00;">Skeleton + Hand + Face Tracker</h1>
+    <h1 style="color:#00ff00;">Advanced Full Body Tracker</h1>
+    <p>Stand back - full body, hands, and face visible for maximum accuracy</p>
     <button id="start-button">START CAMERA</button>
 
     <div id="container">
@@ -24,7 +25,7 @@
     </div>
 
     <script type="module">
-        import { FilesetResolver, PoseLandmarker, DrawingUtils, FaceLandmarker, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+        import { FilesetResolver, PoseLandmarker, HandLandmarker, FaceLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
 
         const container = document.getElementById("container");
         const startButton = document.getElementById("start-button");
@@ -40,22 +41,36 @@
         async function init() {
             const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
 
+            // Heavy full pose for advanced body tracking
             poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task", delegate: "GPU" },
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task",
+                    delegate: "GPU"
+                },
                 runningMode: "VIDEO",
                 numPoses: 1
             });
 
+            // Detailed hands
             handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task", delegate: "GPU" },
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
+                    delegate: "GPU"
+                },
                 runningMode: "VIDEO",
                 numHands: 2
             });
 
+            // Full face mesh
             faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task", delegate: "GPU" },
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+                    delegate: "GPU"
+                },
                 runningMode: "VIDEO",
-                numFaces: 1
+                numFaces: 1,
+                outputFaceBlendshapes: true,
+                outputFacialTransformationMatrixes: true
             });
 
             startButton.style.display = "block";
@@ -68,13 +83,13 @@
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 container.style.display = "block";
-                startButton.style.display = "none";
+                startButton.parentNode.style.display = "none";
                 running = true;
                 predict();
             };
         };
 
-        async function predict(time = performance.now()) {
+        function predict(time = performance.now()) {
             if (!running) return;
 
             const delta = time - lastFpsTime;
@@ -85,41 +100,48 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Pose (skeleton)
+            const drawingUtils = new DrawingUtils(ctx);
+
+            // Advanced Pose - thick green skeleton
             const poseResults = poseLandmarker.detectForVideo(video, time);
             if (poseResults.landmarks?.[0]) {
                 const lm = poseResults.landmarks[0];
-                const drawing = new DrawingUtils(ctx);
-                drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 6 });
-                drawing.drawLandmarks(lm, { color: "#00FF00", radius: 5 });
+                drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 8 });
+                drawingUtils.drawLandmarks(lm, { color: "#00FF00", radius: 6 });
             }
 
-            // Hands
+            // Hands - cyan detailed
             const handResults = handLandmarker.detectForVideo(video, time);
-            if (handResults.landmarks?.length > 0) {
-                for (const handLm of handResults.landmarks) {
-                    const drawing = new DrawingUtils(ctx);
-                    drawing.drawConnectors(handLm, HandLandmarker.HAND_CONNECTIONS, { color: "#00ffff", lineWidth: 4 });
-                    drawing.drawLandmarks(handLm, { color: "#00ffff", radius: 6 });
+            if (handResults.landmarks) {
+                for (const landmarks of handResults.landmarks) {
+                    drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FFFF", lineWidth: 5 });
+                    drawingUtils.drawLandmarks(landmarks, { color: "#00FFFF", radius: 6 });
                 }
             }
 
-            // Face
+            // Face - red mesh + green box
             const faceResults = faceLandmarker.detectForVideo(video, time);
-            if (faceResults.faceLandmarks?.length > 0) {
+            if (faceResults.faceLandmarks?.[0]) {
                 const faceLm = faceResults.faceLandmarks[0];
-                const drawing = new DrawingUtils(ctx);
-                drawing.drawConnectors(faceLm, FaceLandmarker.FACEMESH_TESSELATION, { color: "#ff0000", lineWidth: 1 });
-                drawing.drawLandmarks(faceLm, { color: "#ff0000", radius: 2 });
+                drawingUtils.drawConnectors(faceLm, FaceLandmarker.FACEMESH_TESSELATION, { color: "#FF0000", lineWidth: 1 });
+                drawingUtils.drawLandmarks(faceLm, { color: "#FF0000", radius: 2 });
 
-                // Bounding box around face
-                const bbox = faceResults.faceLandmarks[0].reduce((b, lm) => ({
-                    xMin: Math.min(b.xMin, lm.x), xMax: Math.max(b.xMax, lm.x),
-                    yMin: Math.min(b.yMin, lm.y), yMax: Math.max(b.yMax, lm.y)
+                // Face bounding box
+                const bbox = faceLm.reduce((acc, p) => ({
+                    xMin: Math.min(acc.xMin, p.x),
+                    xMax: Math.max(acc.xMax, p.x),
+                    yMin: Math.min(acc.yMin, p.y),
+                    yMax: Math.max(acc.yMax, p.y)
                 }), { xMin: 1, xMax: 0, yMin: 1, yMax: 0 });
-                ctx.strokeStyle = "#00ff00";
-                ctx.lineWidth = 4;
-                ctx.strokeRect(bbox.xMin * canvas.width, bbox.yMin * canvas.height, (bbox.xMax - bbox.xMin) * canvas.width, (bbox.yMax - bbox.yMin) * canvas.height);
+
+                ctx.strokeStyle = "#00FF00";
+                ctx.lineWidth = 6;
+                ctx.strokeRect(
+                    bbox.xMin * canvas.width,
+                    bbox.yMin * canvas.height,
+                    (bbox.xMax - bbox.xMin) * canvas.width,
+                    (bbox.yMax - bbox.yMin) * canvas.height
+                );
             }
 
             requestAnimationFrame(predict);
