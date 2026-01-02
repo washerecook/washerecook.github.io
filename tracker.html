@@ -6,45 +6,55 @@
     <title>Skeleton Stroke Tracker</title>
     <style>
         body { margin: 0; background: black; color: white; font-family: Arial; text-align: center; }
+        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; font-size: 30px; }
+        .spinner { border: 16px solid #333; border-top: 16px solid #ff0000; border-radius: 50%; width: 120px; height: 120px; animation: spin 2s linear infinite; margin-bottom: 40px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #container { position: relative; width: 100vw; height: 100vh; display: none; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         canvas { z-index: 1; }
         h1 { color: #00ff00; text-shadow: 0 0 10px #00ff00; margin: 20px; }
         #start-button { padding: 20px 40px; font-size: 28px; background: #ff0000; color: white; border: none; border-radius: 15px; cursor: pointer; }
-        #status { margin: 20px; font-size: 20px; color: #ff0066; }
         #fps, #stroke-counter { position: absolute; z-index: 2; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; font-weight: bold; }
         #fps { top: 10px; left: 10px; color: lime; }
         #stroke-counter { top: 60px; left: 10px; color: red; font-size: 28px; }
         #cum-button { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 15px 40px; font-size: 28px; background: #ff0066; color: white; border: none; border-radius: 15px; cursor: pointer; }
-        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 3; font-size: 60px; font-weight: bold; text-shadow: 0 0 20px black; animation: shake 0.3s infinite; }
-        #cum-overlay { background: rgba(255,255,255,0.7); color: #ff0066; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 3; font-size: 60px; font-weight: bold; text-shadow: 0 0 20px black; animation: shake 0.3s infinite; }
         #taze-overlay { background: rgba(255,0,0,0.8); color: white; }
+        #cum-overlay { background: rgba(255,255,255,0.7); color: #ff0066; }
         @keyframes shake { 0% { transform: translate(0); } 20% { transform: translate(10px, -10px); } 40% { transform: translate(-10px, 10px); } 60% { transform: translate(10px, 10px); } 80% { transform: translate(-10px, -10px); } 100% { transform: translate(0); } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0"></script>
+    <!-- Fixed bundle script - global exposure -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js" crossorigin="anonymous"></script>
 </head>
 <body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <div id="load-text">Downloading AI model & WASM... (20-60s on phone, be patient nigga)</div>
+    </div>
+
     <h1>SKELETON STROKE TRACKER</h1>
-    <button id="start-button">START CAMERA & EDGE</button>
-    <div id="status">Tap button to turn on camera</div>
+    <button id="start-button" style="display:none;">START CAMERA & START JERKING</button>
 
     <div id="container">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
         <div id="fps">FPS: -</div>
         <div id="stroke-counter">Strokes: 0</div>
-        <button id="cum-button">I CUMMED 💦</button>
-        <div id="taze-overlay" class="overlay">TAZED BITCH ⚡⚡⚡</div>
-        <div id="cum-overlay" class="overlay">NUTTED GOOD 💦💦💦</div>
+        <button id="cum-button">I BUSTED 💦</button>
+        <div id="taze-overlay" class="overlay">FAILED - TAZED MOTHERFUCKER ⚡⚡⚡</div>
+        <div id="cum-overlay" class="overlay">CUMMED LIKE A CHAMP 💦💦💦</div>
     </div>
 
-    <script type="module">
+    <script>
+        const { FilesetResolver, PoseLandmarker, DrawingUtils } = vision;
+
+        const loading = document.getElementById("loading");
+        const loadText = document.getElementById("load-text");
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const container = document.getElementById("container");
         const startButton = document.getElementById("start-button");
-        const status = document.getElementById("status");
         const fpsEl = document.getElementById("fps");
         const strokeEl = document.getElementById("stroke-counter");
         const cumBtn = document.getElementById("cum-button");
@@ -59,84 +69,84 @@
         let lastFpsTime = performance.now();
 
         async function initMediaPipe() {
-            status.textContent = "Loading AI model...";
+            loadText.textContent = "Loading WASM files...";
             try {
-                const vision = await FilesetResolver.forVisionTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+                const visionFileset = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
                 );
-                poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                loadText.textContent = "Loading pose model...";
+                poseLandmarker = await PoseLandmarker.createFromOptions(visionFileset, {
                     baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
                         delegate: "GPU"
                     },
                     runningMode: "VIDEO",
                     numPoses: 1
                 });
-                status.textContent = "Model loaded. Tap button to start camera.";
+                loading.style.display = "none";
+                startButton.style.display = "block";
             } catch (e) {
-                status.textContent = "Model load failed: " + e.message;
+                loadText.textContent = "Failed: " + e.message + " - refresh the page";
                 console.error(e);
             }
         }
 
         startButton.onclick = async () => {
-            if (!poseLandmarker) {
-                status.textContent = "Model not ready yet, wait...";
-                return;
-            }
-            status.textContent = "Requesting camera...";
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
                 video.srcObject = stream;
                 video.onloadedmetadata = () => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     container.style.display = "block";
                     startButton.style.display = "none";
-                    status.style.display = "none";
                     running = true;
                     predict();
                 };
             } catch (err) {
-                status.textContent = "Camera error: " + err.message;
-                console.error(err);
+                alert("Camera blocked - fix permissions in browser settings");
             }
         };
 
         async function predict(time = performance.now()) {
             if (!running) return;
 
-            // FPS
             const delta = time - lastFpsTime;
             if (delta > 1000) {
-                fpsEl.textContent = `FPS: ${Math.round(1000 / delta * 100) / 100}`;
+                fpsEl.textContent = `FPS: ${Math.round(1000 / delta * 100)/100}`;
                 lastFpsTime = time;
             }
 
-            const results = await poseLandmarker.detectForVideo(video, time);
+            const results = poseLandmarker.detectForVideo(video, time);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (results.landmarks?.[0]) {
+            if (results.landmarks?.length > 0) {
                 const lm = results.landmarks[0];
                 const drawing = new DrawingUtils(ctx);
-                drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 5 });
+                drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 6 });
                 drawing.drawLandmarks(lm, { color: "#FF0000", radius: 6 });
 
-                // Stroke detection (right wrist near crotch)
-                const wrist = lm[16];
+                const wrist = lm[16]; // right wrist
                 const hipL = lm[23], hipR = lm[24];
                 const crotchX = (hipL.x + hipR.x) / 2;
-                const crotchY = (hipL.y + hipR.y) / 2;
 
                 if (wrist.visibility > 0.7 && Math.abs(wrist.x - crotchX) < 0.2) {
-                    if (directionUp && wrist.y < lastHandY - 0.04) {
+                    if (directionUp && wrist.y < lastHandY - 0.05) {
                         strokes++;
                         strokeEl.textContent = `Strokes: ${strokes}`;
                         directionUp = false;
-                        if (strokes >= 100) taze();
-                    } else if (wrist.y > lastHandY + 0.04) {
+                        if (strokes >= 100) {
+                            tazeOverlay.style.display = "flex";
+                            const audioCtx = new AudioContext();
+                            const osc = audioCtx.createOscillator();
+                            osc.type = "sawtooth";
+                            osc.frequency.value = 120;
+                            osc.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 1);
+                            setTimeout(() => { tazeOverlay.style.display = "none"; strokes = 0; strokeEl.textContent = "Strokes: 0"; }, 5000);
+                        }
+                    } else if (wrist.y > lastHandY + 0.05) {
                         directionUp = true;
                     }
                     lastHandY = wrist.y;
@@ -146,30 +156,9 @@
             requestAnimationFrame(predict);
         }
 
-        function taze() {
-            tazeOverlay.style.display = "flex";
-            // Simple zap sound via oscillator
-            const audioCtx = new AudioContext();
-            const osc = audioCtx.createOscillator();
-            osc.type = "sawtooth";
-            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-            osc.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
-            setTimeout(() => {
-                tazeOverlay.style.display = "none";
-                strokes = 0;
-                strokeEl.textContent = "Strokes: 0";
-            }, 4000);
-        }
-
         cumBtn.onclick = () => {
             cumOverlay.style.display = "flex";
-            setTimeout(() => {
-                cumOverlay.style.display = "none";
-                strokes = 0;
-                strokeEl.textContent = "Strokes: 0";
-            }, 3000);
+            setTimeout(() => { cumOverlay.style.display = "none"; strokes = 0; strokeEl.textContent = "Strokes: 0"; }, 4000);
         };
 
         initMediaPipe();
