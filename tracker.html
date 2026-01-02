@@ -2,110 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Skeleton Stroke Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure Skeleton + Hand + Face Tracker</title>
     <style>
-        body { margin: 0; background: black; color: white; font-family: Arial; text-align: center; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; font-size: 28px; }
-        .spinner { border: 16px solid #333; border-top: 16px solid #00ff00; border-radius: 50%; width: 120px; height: 120px; animation: spin 1.5s linear infinite; margin-bottom: 40px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { margin: 0; background: black; color: white; font-family: Arial; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
         #container { position: relative; width: 100vw; height: 100vh; display: none; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         canvas { z-index: 1; }
-        #start-button { padding: 20px 40px; font-size: 28px; background: #00ff00; color: black; border: none; border-radius: 15px; cursor: pointer; margin: 20px; font-weight: bold; }
-        #fps, #stroke-counter { position: absolute; z-index: 2; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; font-weight: bold; }
-        #fps { top: 10px; left: 10px; color: #00ff00; font-size: 20px; }
-        #stroke-counter { top: 70px; left: 10px; color: #ff0000; font-size: 32px; }
-        #cum-button { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 2; padding: 20px 50px; font-size: 32px; background: #ff0066; color: white; border: none; border-radius: 20px; cursor: pointer; }
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; justify-content: center; align-items: center; z-index: 3; font-size: 80px; font-weight: bold; text-shadow: 0 0 30px black; animation: shake 0.4s infinite; }
-        #taze-overlay { background: rgba(255,0,0,0.8); color: white; }
-        #cum-overlay { background: rgba(255,255,255,0.7); color: #ff0066; }
-        @keyframes shake { 0% { transform: translate(0); } 25% { transform: translate(15px, -15px); } 50% { transform: translate(-15px, 15px); } 75% { transform: translate(15px, 15px); } 100% { transform: translate(0); } }
+        #start-button { padding: 20px 40px; font-size: 28px; background: #00ff00; color: black; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
+        #fps { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; color: lime; font-size: 20px; z-index: 2; }
     </style>
 </head>
 <body>
-    <div id="loading">
-        <div class="spinner"></div>
-        <div id="load-text">LOADING AI MODEL... (30-90s on phone - strong WiFi helps)</div>
-    </div>
-
-    <h1 style="margin-top:50vh; color:#00ff00;">SKELETON STROKE TRACKER</h1>
-    <button id="start-button" style="display:none;">START CAMERA & STROKE THAT DICK</button>
+    <h1 style="color:#00ff00;">Skeleton + Hand + Face Tracker</h1>
+    <button id="start-button">START CAMERA</button>
 
     <div id="container">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
         <div id="fps">FPS: -</div>
-        <div id="stroke-counter">Strokes: 0</div>
-        <button id="cum-button">I CUMMED 💦</button>
-        <div id="taze-overlay" class="overlay">TAZED BITCH ⚡⚡⚡</div>
-        <div id="cum-overlay" class="overlay">CUMMED 💦💦💦</div>
     </div>
 
     <script type="module">
-        import { FilesetResolver, PoseLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+        import { FilesetResolver, PoseLandmarker, DrawingUtils, FaceLandmarker, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
 
-        const loading = document.getElementById("loading");
-        const loadText = document.getElementById("load-text");
+        const container = document.getElementById("container");
+        const startButton = document.getElementById("start-button");
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
-        const container = document.getElementById("container");
-        const startButton = document.getElementById("start-button");
         const fpsEl = document.getElementById("fps");
-        const strokeEl = document.getElementById("stroke-counter");
-        const cumBtn = document.getElementById("cum-button");
-        const tazeOverlay = document.getElementById("taze-overlay");
-        const cumOverlay = document.getElementById("cum-overlay");
 
-        let poseLandmarker;
+        let poseLandmarker, handLandmarker, faceLandmarker;
         let running = false;
-        let strokes = 0;
-        let lastHandY = 0;
-        let directionUp = false;
         let lastFpsTime = performance.now();
 
         async function init() {
-            loadText.textContent = "Downloading WASM & model...";
-            try {
-                const vision = await FilesetResolver.forVisionTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-                );
-                loadText.textContent = "Building PoseLandmarker...";
-                poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task",
-                        delegate: "GPU"
-                    },
-                    runningMode: "VIDEO",
-                    numPoses: 1
-                });
-                loading.style.display = "none";
-                startButton.style.display = "block";
-            } catch (e) {
-                loadText.textContent = "FAILED: " + e.message + " - Refresh page";
-                console.error(e);
-            }
+            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
+
+            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task", delegate: "GPU" },
+                runningMode: "VIDEO",
+                numPoses: 1
+            });
+
+            handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task", delegate: "GPU" },
+                runningMode: "VIDEO",
+                numHands: 2
+            });
+
+            faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task", delegate: "GPU" },
+                runningMode: "VIDEO",
+                numFaces: 1
+            });
+
+            startButton.style.display = "block";
         }
 
         startButton.onclick = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    container.style.display = "block";
-                    startButton.style.display = "none";
-                    running = true;
-                    predict();
-                };
-            } catch (err) {
-                alert("Camera blocked - check permissions");
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                container.style.display = "block";
+                startButton.style.display = "none";
+                running = true;
+                predict();
+            };
         };
 
-        function predict(time = performance.now()) {
+        async function predict(time = performance.now()) {
             if (!running) return;
 
             const delta = time - lastFpsTime;
@@ -114,50 +83,47 @@
                 lastFpsTime = time;
             }
 
-            const results = poseLandmarker.detectForVideo(video, time);
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (results.landmarks?.[0]) {
-                const lm = results.landmarks[0];
+            // Pose (skeleton)
+            const poseResults = poseLandmarker.detectForVideo(video, time);
+            if (poseResults.landmarks?.[0]) {
+                const lm = poseResults.landmarks[0];
                 const drawing = new DrawingUtils(ctx);
                 drawing.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 6 });
-                drawing.drawLandmarks(lm, { color: "#FF0000", radius: 8 });
+                drawing.drawLandmarks(lm, { color: "#00FF00", radius: 5 });
+            }
 
-                const wrist = lm[16]; // right wrist
-                const hipL = lm[23], hipR = lm[24];
-                const crotchX = (hipL.x + hipR.x) / 2;
-
-                if (wrist.visibility > 0.7 && Math.abs(wrist.x - crotchX) < 0.18) {
-                    if (directionUp && wrist.y < lastHandY - 0.05) {
-                        strokes++;
-                        strokeEl.textContent = `Strokes: ${strokes}`;
-                        directionUp = false;
-                        if (strokes >= 100) {
-                            tazeOverlay.style.display = "flex";
-                            const audio = new AudioContext();
-                            const osc = audio.createOscillator();
-                            osc.type = "sawtooth";
-                            osc.frequency.value = 200;
-                            osc.connect(audio.destination);
-                            osc.start();
-                            osc.stop(audio.currentTime + 1);
-                            setTimeout(() => { tazeOverlay.style.display = "none"; strokes = 0; strokeEl.textContent = "Strokes: 0"; }, 5000);
-                        }
-                    } else if (wrist.y > lastHandY + 0.05) {
-                        directionUp = true;
-                    }
-                    lastHandY = wrist.y;
+            // Hands
+            const handResults = handLandmarker.detectForVideo(video, time);
+            if (handResults.landmarks?.length > 0) {
+                for (const handLm of handResults.landmarks) {
+                    const drawing = new DrawingUtils(ctx);
+                    drawing.drawConnectors(handLm, HandLandmarker.HAND_CONNECTIONS, { color: "#00ffff", lineWidth: 4 });
+                    drawing.drawLandmarks(handLm, { color: "#00ffff", radius: 6 });
                 }
+            }
+
+            // Face
+            const faceResults = faceLandmarker.detectForVideo(video, time);
+            if (faceResults.faceLandmarks?.length > 0) {
+                const faceLm = faceResults.faceLandmarks[0];
+                const drawing = new DrawingUtils(ctx);
+                drawing.drawConnectors(faceLm, FaceLandmarker.FACEMESH_TESSELATION, { color: "#ff0000", lineWidth: 1 });
+                drawing.drawLandmarks(faceLm, { color: "#ff0000", radius: 2 });
+
+                // Bounding box around face
+                const bbox = faceResults.faceLandmarks[0].reduce((b, lm) => ({
+                    xMin: Math.min(b.xMin, lm.x), xMax: Math.max(b.xMax, lm.x),
+                    yMin: Math.min(b.yMin, lm.y), yMax: Math.max(b.yMax, lm.y)
+                }), { xMin: 1, xMax: 0, yMin: 1, yMax: 0 });
+                ctx.strokeStyle = "#00ff00";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(bbox.xMin * canvas.width, bbox.yMin * canvas.height, (bbox.xMax - bbox.xMin) * canvas.width, (bbox.yMax - bbox.yMin) * canvas.height);
             }
 
             requestAnimationFrame(predict);
         }
-
-        cumBtn.onclick = () => {
-            cumOverlay.style.display = "flex";
-            setTimeout(() => { cumOverlay.style.display = "none"; strokes = 0; strokeEl.textContent = "Strokes: 0"; }, 4000);
-        };
 
         init();
     </script>
