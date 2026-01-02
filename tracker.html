@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Full Body Tracker</title>
+    <title>Hands & Palms Tracker</title>
     <style>
         body { margin: 0; background: black; color: white; font-family: Arial; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
         #container { position: relative; width: 100vw; height: 100vh; display: none; }
         video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         canvas { z-index: 1; }
-        #start-button { padding: 20px 40px; font-size: 28px; background: #00ff00; color: black; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
-        #fps { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; color: lime; font-size: 20px; z-index: 2; }
+        #start-button { padding: 20px 40px; font-size: 28px; background: #00ffff; color: black; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
+        #fps { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; color: cyan; font-size: 20px; z-index: 2; }
+        #hand-count { position: absolute; top: 70px; left: 10px; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 10px; color: #ff00ff; font-size: 24px; z-index: 2; }
     </style>
 </head>
 <body>
-    <h1 style="color:#00ff00;">Advanced Full Body Tracker</h1>
-    <p>Stand back - full body, hands, and face visible for maximum accuracy</p>
+    <h1 style="color:#00ffff;">Hands & Palms Tracker</h1>
+    <p>Hold one or both hands up to the camera - palms facing you for best tracking</p>
     <button id="start-button">START CAMERA</button>
 
     <div id="container">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
         <div id="fps">FPS: -</div>
+        <div id="hand-count">Hands Detected: 0</div>
     </div>
 
     <script type="module">
-        import { FilesetResolver, PoseLandmarker, HandLandmarker, FaceLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+        import { FilesetResolver, HandLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
 
         const container = document.getElementById("container");
         const startButton = document.getElementById("start-button");
@@ -33,25 +35,15 @@
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const fpsEl = document.getElementById("fps");
+        const handCountEl = document.getElementById("hand-count");
 
-        let poseLandmarker, handLandmarker, faceLandmarker;
+        let handLandmarker;
         let running = false;
         let lastFpsTime = performance.now();
 
         async function init() {
             const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
 
-            // Heavy full pose for advanced body tracking
-            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task",
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                numPoses: 1
-            });
-
-            // Detailed hands
             handLandmarker = await HandLandmarker.createFromOptions(vision, {
                 baseOptions: {
                     modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
@@ -59,18 +51,6 @@
                 },
                 runningMode: "VIDEO",
                 numHands: 2
-            });
-
-            // Full face mesh
-            faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                numFaces: 1,
-                outputFaceBlendshapes: true,
-                outputFacialTransformationMatrixes: true
             });
 
             startButton.style.display = "block";
@@ -98,51 +78,20 @@
                 lastFpsTime = time;
             }
 
+            const results = handLandmarker.detectForVideo(video, time);
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const drawingUtils = new DrawingUtils(ctx);
-
-            // Advanced Pose - thick green skeleton
-            const poseResults = poseLandmarker.detectForVideo(video, time);
-            if (poseResults.landmarks?.[0]) {
-                const lm = poseResults.landmarks[0];
-                drawingUtils.drawConnectors(lm, PoseLandmarker.POSE_CONNECTIONS, { color: "#00FF00", lineWidth: 8 });
-                drawingUtils.drawLandmarks(lm, { color: "#00FF00", radius: 6 });
-            }
-
-            // Hands - cyan detailed
-            const handResults = handLandmarker.detectForVideo(video, time);
-            if (handResults.landmarks) {
-                for (const landmarks of handResults.landmarks) {
-                    drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FFFF", lineWidth: 5 });
-                    drawingUtils.drawLandmarks(landmarks, { color: "#00FFFF", radius: 6 });
+            let handCount = 0;
+            if (results.landmarks) {
+                handCount = results.landmarks.length;
+                for (const landmarks of results.landmarks) {
+                    const drawingUtils = new DrawingUtils(ctx);
+                    drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FFFF", lineWidth: 6 });
+                    drawingUtils.drawLandmarks(landmarks, { color: "#00FFFF", radius: 8 });
                 }
             }
-
-            // Face - red mesh + green box
-            const faceResults = faceLandmarker.detectForVideo(video, time);
-            if (faceResults.faceLandmarks?.[0]) {
-                const faceLm = faceResults.faceLandmarks[0];
-                drawingUtils.drawConnectors(faceLm, FaceLandmarker.FACEMESH_TESSELATION, { color: "#FF0000", lineWidth: 1 });
-                drawingUtils.drawLandmarks(faceLm, { color: "#FF0000", radius: 2 });
-
-                // Face bounding box
-                const bbox = faceLm.reduce((acc, p) => ({
-                    xMin: Math.min(acc.xMin, p.x),
-                    xMax: Math.max(acc.xMax, p.x),
-                    yMin: Math.min(acc.yMin, p.y),
-                    yMax: Math.max(acc.yMax, p.y)
-                }), { xMin: 1, xMax: 0, yMin: 1, yMax: 0 });
-
-                ctx.strokeStyle = "#00FF00";
-                ctx.lineWidth = 6;
-                ctx.strokeRect(
-                    bbox.xMin * canvas.width,
-                    bbox.yMin * canvas.height,
-                    (bbox.xMax - bbox.xMin) * canvas.width,
-                    (bbox.yMax - bbox.yMin) * canvas.height
-                );
-            }
+            handCountEl.textContent = `Hands Detected: ${handCount}`;
 
             requestAnimationFrame(predict);
         }
