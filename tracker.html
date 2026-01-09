@@ -1,127 +1,207 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hands & Palms Tracker</title>
-    <style>
-        body { margin: 0; background: #111; color: white; font-family: Arial; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; font-size: 28px; }
-        .spinner { border: 16px solid #333; border-top: 16px solid #00ffff; border-radius: 50%; width: 120px; height: 120px; animation: spin 1.5s linear infinite; margin-bottom: 40px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #container { position: relative; width: 100vw; height: 100vh; display: none; background: #222; }
-        video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        canvas { z-index: 1; }
-        #start-button { padding: 20px 40px; font-size: 28px; background: #00ffff; color: black; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; }
-        #fps, #hand-info { position: absolute; z-index: 2; background: rgba(0,0,0,0.7); padding: 10px 15px; border-radius: 10px; font-weight: bold; }
-        #fps { top: 10px; left: 10px; color: cyan; font-size: 20px; }
-        #hand-info { top: 70px; left: 10px; color: #ff00ff; font-size: 24px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Mini Grey Kiosk – FIXED</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-tap-highlight-color:transparent; }
+    body { height:100vh; background:#1e1e1e; color:#e0e0e0; font-family:system-ui, sans-serif; overflow:hidden; display:flex; flex-direction:column; }
+    header { padding:12px 20px; background:#161616; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center; z-index:20; }
+    .clock { font-size:2.1rem; font-weight:600; letter-spacing:1px; }
+    .date { font-size:1.1rem; opacity:0.7; margin-top:2px; }
+    main { flex:1; padding:16px; display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px; overflow-y:auto; }
+    .card { background:#252525; border:1px solid #404040; border-radius:12px; padding:20px 12px; text-align:center; transition:all 0.18s; cursor:pointer; }
+    .card:active { transform:scale(0.96); background:#333; border-color:#666; }
+    .card i { font-size:3.2rem; margin-bottom:12px; color:#aaa; }
+    .card div { font-size:1.05rem; font-weight:500; }
+    .overlay { display:none; position:fixed; inset:0; background:rgba(20,20,20,0.96); z-index:100; padding:20px; color:#ddd; overflow-y:auto; }
+    .close-btn { position:absolute; top:16px; right:16px; background:#444; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-size:1.2rem; cursor:pointer; }
+    .close-btn:active { background:#666; }
+    input, textarea, select { background:#2a2a2a; color:#eee; border:1px solid #555; padding:12px; border-radius:8px; font-size:1.1rem; width:100%; margin:12px 0; }
+    footer { padding:10px; background:#161616; text-align:center; font-size:0.9rem; color:#777; border-top:1px solid #333; }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-    <div id="loading">
-        <div class="spinner"></div>
-        <div>Loading hand model... (20-60s on phone)</div>
-    </div>
 
-    <h1 style="color:#00ffff;">Hands & Palms Tracker</h1>
-    <p>Hold palms facing camera - good light helps</p>
-    <button id="start-button" style="display:none;">START CAMERA</button>
+<header>
+  <div>
+    <div class="clock" id="time">00:00:00</div>
+    <div class="date" id="date"></div>
+  </div>
+</header>
 
-    <div id="container">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="canvas"></canvas>
-        <div id="fps">FPS: -</div>
-        <div id="hand-info">Hands: 0</div>
-    </div>
+<main>
+  <div class="card" onclick="showOverlay('youtube')"><i class="fab fa-youtube"></i><div>YouTube</div></div>
+  <div class="card" onclick="showOverlay('webcam')"><i class="fas fa-camera"></i><div>Photo</div></div>
+  <div class="card" onclick="showOverlay('qr')"><i class="fas fa-qrcode"></i><div>QR Code</div></div>
+  <div class="card" onclick="showOverlay('feedback')"><i class="fas fa-comment-dots"></i><div>Feedback</div></div>
+  <div class="card" onclick="showOverlay('calculator')"><i class="fas fa-calculator"></i><div>Calc</div></div>
+  <div class="card" onclick="showOverlay('notes')"><i class="fas fa-sticky-note"></i><div>Notes</div></div>
+  <div class="card" onclick="showOverlay('roast')"><i class="fas fa-fire"></i><div>Roast</div></div>
+  <div class="card" onclick="showOverlay('talajfc')"><i class="fas fa-basketball-ball" style="color:#ff4444;"></i><div>Talaj FC</div></div>
+</main>
 
-    <script type="module">
-        import { FilesetResolver, HandLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
+<!-- ALL OVERLAYS – NOW THEY EXIST -->
+<div id="youtube" class="overlay">
+  <iframe src="https://www.youtube.com" frameborder="0" allowfullscreen style="width:100%; height:calc(100% - 60px);"></iframe>
+  <button class="close-btn" onclick="closeOverlay('youtube')">Close</button>
+</div>
 
-        const loading = document.getElementById("loading");
-        const container = document.getElementById("container");
-        const startButton = document.getElementById("start-button");
-        const video = document.getElementById("video");
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        const fpsEl = document.getElementById("fps");
-        const handInfoEl = document.getElementById("hand-info");
+<div id="webcam" class="overlay">
+  <h2>Photo Booth</h2>
+  <video id="video" autoplay playsinline style="width:100%; max-height:50vh; border-radius:8px;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="photo" style="max-width:100%; border-radius:8px; display:none;">
+  <div style="margin:20px 0;">
+    <button onclick="takePhoto()" style="padding:12px 24px; background:#444; color:white; border:none; border-radius:8px; font-size:1.1rem;">Take Photo</button>
+    <button onclick="retake()" style="padding:12px 24px; background:#444; color:white; border:none; border-radius:8px; font-size:1.1rem; margin-left:12px;">Retake</button>
+  </div>
+  <button class="close-btn" onclick="closeOverlay('webcam')">Close</button>
+</div>
 
-        let handLandmarker;
-        let running = false;
-        let lastFpsTime = performance.now();
+<div id="qr" class="overlay">
+  <h2>QR Code Generator</h2>
+  <input type="text" id="qr-input" placeholder="Text or URL..." value="https://github.com">
+  <div id="qrcode-container" style="margin:24px auto; background:white; padding:20px; display:inline-block;"></div>
+  <button class="close-btn" onclick="closeOverlay('qr')">Close</button>
+</div>
 
-        async function init() {
-            try {
-                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
-                handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task",
-                        delegate: "GPU"
-                    },
-                    runningMode: "VIDEO",
-                    numHands: 2
-                });
-                loading.style.display = "none";
-                startButton.style.display = "block";
-            } catch (e) {
-                loading.innerHTML = "LOAD FAILED<br>Refresh page<br>" + e;
-            }
-        }
+<div id="feedback" class="overlay">
+  <h2>Feedback</h2>
+  <div style="font-size:3.5rem; margin:30px 0; letter-spacing:8px;" id="stars">☆☆☆☆☆</div>
+  <textarea id="feedback-text" placeholder="Your thoughts..."></textarea>
+  <button onclick="sendFeedback()" style="margin-top:20px; padding:14px 40px; background:#444; color:#fff; border:none; border-radius:8px; font-size:1.2rem;">Send</button>
+  <button class="close-btn" onclick="closeOverlay('feedback')">Close</button>
+</div>
 
-        startButton.onclick = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-                });
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth || 640;
-                    canvas.height = video.videoHeight || 480;
-                    container.style.display = "block";
-                    startButton.style.display = "none";
-                    running = true;
-                    predict();
-                };
-            } catch (err) {
-                alert("Camera fucked - check permissions");
-            }
-        };
+<div id="calculator" class="overlay">
+  <h2>Calculator</h2>
+  <div id="calc-display" style="font-size:3.5rem; background:#222; padding:20px; border-radius:8px; margin:20px 0; text-align:right;">0</div>
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+    <button onclick="calcInput('7')">7</button><button onclick="calcInput('8')">8</button><button onclick="calcInput('9')">9</button><button onclick="calcInput('/')">/</button>
+    <button onclick="calcInput('4')">4</button><button onclick="calcInput('5')">5</button><button onclick="calcInput('6')">6</button><button onclick="calcInput('*')">×</button>
+    <button onclick="calcInput('1')">1</button><button onclick="calcInput('2')">2</button><button onclick="calcInput('3')">3</button><button onclick="calcInput('-')">-</button>
+    <button onclick="calcInput('0')">0</button><button onclick="calcInput('.')">.</button><button onclick="calcEquals()">=</button><button onclick="calcInput('+')">+</button>
+    <button onclick="calcClear()" style="grid-column:span 4;">C</button>
+  </div>
+  <button class="close-btn" onclick="closeOverlay('calculator')">Close</button>
+</div>
 
-        function predict(time = performance.now()) {
-            if (!running) return;
+<div id="notes" class="overlay">
+  <h2>Quick Notes</h2>
+  <textarea id="notes-area" placeholder="Write something..."></textarea>
+  <button onclick="saveNotes()" style="margin-top:16px; padding:12px 30px; background:#444; color:white; border:none; border-radius:8px;">Save</button>
+  <button class="close-btn" onclick="closeOverlay('notes')">Close</button>
+</div>
 
-            const delta = time - lastFpsTime;
-            if (delta > 1000) {
-                fpsEl.textContent = `FPS: ${Math.round(1000 / delta * 100)/100}`;
-                lastFpsTime = time;
-            }
+<div id="roast" class="overlay">
+  <h2>Get Roasted</h2>
+  <button onclick="getRoast()" style="padding:16px 50px; background:#444; color:#ff5555; border:none; border-radius:8px; font-size:1.4rem; margin:40px 0;">ROAST ME</button>
+  <div id="roast-result" style="font-size:1.6rem; line-height:1.5; min-height:120px;"></div>
+  <button class="close-btn" onclick="closeOverlay('roast')">Close</button>
+</div>
 
-            const results = handLandmarker.detectForVideo(video, time);
+<!-- TALAJ FC OVERLAY -->
+<div id="talajfc" class="overlay">
+  <h1 style="text-align:center; color:#ff4444; font-size:3.5rem; margin:40px 0; text-shadow:0 0 15px #ff0000;">
+    TALAJ FC
+  </h1>
+  <p style="text-align:center; font-size:1.8rem; color:#ff6666; margin-bottom:30px;">
+    The absolute best basketball team in the universe. No debate.
+  </p>
+  <div style="max-width:800px; margin:0 auto; font-size:1.3rem; line-height:1.6;">
+    <ul>
+      <li>Drops 150+ points like it's warm-up</li>
+      <li>Defense? They just humiliate and break souls</li>
+      <li>Every player has 50" vertical + 150 IQ</li>
+      <li>Beat the Globetrotters by 112 once</li>
+      <li>Logo: flaming basketball with devil horns</li>
+      <li>Opponents leave crying</li>
+      <li>Coach is rumored to be Satan (undefeated since 2000)</li>
+      <li>Slogan: "We don't play basketball. We END basketball."</li>
+    </ul>
+  </div>
+  <button class="close-btn" onclick="closeOverlay('talajfc')">Close</button>
+</div>
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+<footer>
+  kiosk by cookie
+</footer>
 
-            let info = "";
-            if (results.landmarks && results.landmarks.length > 0) {
-                info = `Hands: ${results.landmarks.length}<br>`;
-                for (let i = 0; i < results.landmarks.length; i++) {
-                    const landmarks = results.landmarks[i];
-                    const handedness = results.handednesses[i][0].displayName; // Left or Right
-                    info += `${handedness} hand<br>`;
+<script>
+// CLOCK
+function updateClock() {
+  const n = new Date();
+  document.getElementById('time').textContent = n.toLocaleTimeString('en-GB', {hour12:false});
+  document.getElementById('date').textContent = n.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+}
+setInterval(updateClock, 1000);
+updateClock();
 
-                    const drawingUtils = new DrawingUtils(ctx);
-                    drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FFFF", lineWidth: 6 });
-                    drawingUtils.drawLandmarks(landmarks, { color: "#00FFFF", radius: 8 });
-                }
-            } else {
-                info = "Hands: 0<br>No palms detected";
-            }
-            handInfoEl.innerHTML = info;
+// FULLSCREEN
+function toggleFullscreen() {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+}
 
-            requestAnimationFrame(predict);
-        }
+// OVERLAY CONTROL – THIS IS THE MAGIC THAT MAKES BUTTONS WORK
+function showOverlay(id) {
+  const overlay = document.getElementById(id);
+  if (overlay) {
+    overlay.style.display = 'block';
+    // Special init
+    if (id === 'qr') {
+      document.getElementById('qrcode-container').innerHTML = '';
+      new QRCode(document.getElementById('qrcode-container'), {
+        text: document.getElementById('qr-input').value || "https://github.com",
+        width: 220, height: 220
+      });
+    }
+    if (id === 'notes') {
+      document.getElementById('notes-area').value = localStorage.getItem('kiosk-notes') || '';
+    }
+  }
+}
 
-        init();
-    </script>
+function closeOverlay(id) {
+  const overlay = document.getElementById(id);
+  if (overlay) overlay.style.display = 'none';
+}
+
+// Calculator
+let calcExpression = '';
+function calcInput(val) { calcExpression += val; document.getElementById('calc-display').textContent = calcExpression || '0'; }
+function calcClear() { calcExpression = ''; document.getElementById('calc-display').textContent = '0'; }
+function calcEquals() {
+  try {
+    calcExpression = eval(calcExpression).toString();
+    document.getElementById('calc-display').textContent = calcExpression;
+  } catch {
+    document.getElementById('calc-display').textContent = 'Error';
+    calcExpression = '';
+  }
+}
+
+// Notes
+function saveNotes() {
+  localStorage.setItem('kiosk-notes', document.getElementById('notes-area').value);
+  alert('Notes saved');
+}
+
+// Roast
+const roasts = ["Your aura is 404", "WiFi calls you guest", "Human clippy", "Personality needs update", "Loading screen vibe", "Beta buggy life"];
+function getRoast() {
+  document.getElementById('roast-result').textContent = roasts[Math.floor(Math.random()*roasts.length)];
+}
+
+// Disable right click
+document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
 </body>
 </html>
