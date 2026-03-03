@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>67</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      height: 100vh;
+      background: #0a0a0a;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .number {
+      font-size: 40vw;          /* scales with viewport width */
+      font-weight: 900;
+      line-height: 0.8;
+      text-shadow: 
+        0 0 40px #ff00aa,
+        0 0 80px #ff00aa,
+        0 0 120px #00ffff;
+      letter-spacing: -0.05em;
+      background: linear-gradient(90deg, #ff00aa, #00ffff, #ff00aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: pulse 4s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to   { transform: scale(1.08); }
+    }
+  </style>
+</head>
+<body>
+  <div class="number">67</div>
+</body>
+</html>
