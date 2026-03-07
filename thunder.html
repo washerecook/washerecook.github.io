@@ -1,208 +1,151 @@
 ﻿<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Thunder Client • 2026 – External Domination</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            thunder: '#ef4444',
-            bgdark: '#0a0a0a',
-            card: '#1a1a1a',
-            cardhover: '#222222',
-            textgray: '#d1d5db',
-          }
-        }
-      }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Remote Screen Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0a0a;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #e0e0e0;
+      height: 100vh;
+      overflow: hidden;
     }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: #000;
-            color: #e5e7eb;
-        }
-
-        h1, h2, h3 {
-            font-family: 'Orbitron', sans-serif;
-        }
-
-        .glitch {
-            position: relative;
-            animation: glitch-skew 4s infinite linear alternate-reverse;
-        }
-
-            .glitch::before, .glitch::after {
-                content: attr(data-text);
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                opacity: 0.8;
-            }
-
-            .glitch::before {
-                left: 2px;
-                text-shadow: -2px 0 #ef4444;
-                clip: rect(0, 900px, 0, 0);
-                animation: glitch-anim 2s infinite linear alternate-reverse;
-            }
-
-            .glitch::after {
-                left: -2px;
-                text-shadow: 2px 0 #00ffff;
-                clip: rect(0, 900px, 0, 0);
-                animation: glitch-anim2 3s infinite linear alternate-reverse;
-            }
-
-        @keyframes glitch-anim {
-            0% {
-                clip: rect(20px, 9999px, 40px, 0);
-            }
-
-            20% {
-                clip: rect(60px, 9999px, 80px, 0);
-            }
-            /* more random clips */
-
-            100% {
-                clip: rect(10px, 9999px, 90px, 0);
-            }
-        }
-
-        @keyframes glitch-anim2 {
-            0% {
-                clip: rect(30px, 9999px, 50px, 0);
-            }
-            /* etc */
-        }
-
-        @keyframes glitch-skew {
-            0%, 100% {
-                transform: skew(0deg);
-            }
-
-            10% {
-                transform: skew(2deg);
-            }
-
-            20% {
-                transform: skew(-1deg);
-            }
-        }
-    </style>
+    #container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    #stream {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: black;
+      image-rendering: crisp-edges;   /* or pixelated / auto */
+    }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.6);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #overlay.visible {
+      opacity: 1;
+    }
+    #status {
+      background: rgba(30,30,40,0.85);
+      padding: 1.2rem 2rem;
+      border-radius: 12px;
+      font-size: 1.3rem;
+      box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+    }
+    #controls {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 10;
+      pointer-events: auto;
+    }
+    button {
+      background: rgba(60,60,80,0.8);
+      color: white;
+      border: 1px solid #555;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: rgba(90,90,110,0.9);
+    }
+  </style>
 </head>
-<body class="bg-bgdark min-h-screen flex flex-col">
+<body>
 
-    <script>
-    AOS.init({ duration: 800, once: true, easing: 'ease-out' });
-    </script>
+<div id="container">
+  <img id="stream" alt="Live screen stream" draggable="false" />
 
-    <!-- Hero -->
-    <header class="relative py-32 md:py-40 text-center overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-bgdark via-card to-bgdark opacity-80"></div>
-        <div class="relative z-10 max-w-5xl mx-auto px-6">
-            <h1 class="text-6xl md:text-8xl lg:text-9xl font-black text-thunder glitch mb-6" data-text="THUNDER CLIENT">
-                THUNDER CLIENT
-            </h1>
-            <p class="text-3xl md:text-4xl text-textgray font-medium mt-4" data-aos="fade-up" data-aos-delay="200">
-                thunder client
-            </p>
-            <p class="text-xl md:text-2xl text-gray-500 mt-3" data-aos="fade-up" data-aos-delay="300">
-                Attach. Execute.
-            </p>
+  <div id="overlay">
+    <div id="status">Connecting…</div>
+  </div>
 
-            <div class="mt-12 flex flex-col sm:flex-row justify-center gap-6" data-aos="zoom-in" data-aos-delay="400">
-                <a href="https://discord.gg/RtPD5dnQSw" target="_blank"
-                   class="bg-thunder hover:bg-red-600 px-10 py-5 rounded-xl text-xl font-bold shadow-xl transform hover:scale-105 transition duration-300">
-                    Join Discord drop soon
-                </a>
-                <a href="#" class="bg-card hover:bg-cardhover px-10 py-5 rounded-xl text-xl font-bold border border-gray-700 hover:border-thunder/70 transition duration-300">
-                    Premium Preview
-                </a>
-            </div>
-        </div>
-    </header>
+  <div id="controls">
+    <button onclick="toggleFullscreen()">Fullscreen</button>
+    <button onclick="reloadStream()">Reconnect</button>
+  </div>
+</div>
 
-    <!-- Supported Games -->
-    <section class="py-20 px-6 max-w-7xl mx-auto">
-        <h2 class="text-5xl md:text-6xl font-black text-center mb-16 text-thunder" data-aos="fade-down">
-            SUPPORTED GAMES
-        </h2>
-        <div class="grid md:grid-cols-4 gap-8">
-            <div class="bg-card p-8 rounded-2xl border border-gray-800 hover:border-thunder/50 hover:shadow-2xl transform hover:scale-105 transition duration-500" data-aos="fade-up">
-                <h3 class="text-3xl font-bold text-textgray mb-4">Gorilla Tag</h3>
-                <p class="text-gray-400">UND.</p>
-            </div>
-            <div class="bg-card p-8 rounded-2xl border border-gray-800 hover:border-thunder/50 hover:shadow-2xl transform hover:scale-105 transition duration-500" data-aos="fade-up" data-aos-delay="100">
-                <h3 class="text-3xl font-bold text-textgray mb-4">Roblox</h3>
-                <p class="text-gray-400"> 90% UNC (not 2026 data)</p>
-            </div>
-            <div class="bg-card p-8 rounded-2xl border border-gray-800 hover:border-thunder/50 hover:shadow-2xl transform hover:scale-105 transition duration-500" data-aos="fade-up" data-aos-delay="200">
-                <h3 class="text-3xl font-bold text-textgray mb-4">Your Game!</h3>
-                <p class="text-gray-400">dm cookiemonke on discord to put up your own cheat or ideas on the client!</p>
-            </div>
-            <div class="bg-card p-8 rounded-2xl border border-gray-800 hover:border-thunder/50 hover:shadow-2xl transform hover:scale-105 transition duration-500" data-aos="fade-up" data-aos-delay="300">
-                <h3 class="text-3xl font-bold text-textgray mb-4">Your Game!</h3>
-                <p class="text-gray-400">text-gray-400">dm cookiemonke on discord to put up your own cheat or ideas on the client!</p>
-            </div>
-        </div>
-    </section>
+<script>
+// ────────────────────────────────────────────────
+//   SETTINGS  – change these two lines if needed
+// ────────────────────────────────────────────────
+const STREAM_URL = "http://localhost:8765/stream";           // ← local testing
+// const STREAM_URL = "https://your-ngrok-url.ngrok-free.app/stream";  // ← public
 
-    <!-- Preview Section -->
-    <section class="py-20 px-6 bg-black/50">
-        <div class="max-w-6xl mx-auto">
-            <h2 class="text-5xl md:text-6xl font-black text-center mb-16 text-thunder" data-aos="fade-down">
-                PREVIEW: thunder
-            </h2>
-            <div class="grid md:grid-cols-2 gap-12">
-                <div data-aos="fade-right">
-                    <p class="text-xl leading-relaxed text-gray-300 mb-6">
-                        Pure external – attach to Roblox process with zero injection risk.<br>
-                        Execute Lua scripts instantly, toggle controls via sleek overlay.<br>
-                        Real-time sliders, hotkeys, config saving.<br>
-                        Load anything: custom exploits, bypass layers, lobby tools.<br>
-                        Premium unlocks auto-features, exclusive stability.
-                    </p>
-                    <p class="text-lg text-thunder font-semibold">Attach → Execute → Own.</p>
-                </div>
-                <div class="space-y-6" data-aos="fade-left">
-                    <!-- Swap these with your actual client screenshots later -->
-                    <img src="https://files.catbox.moe/606fzq.jpg"
-                         alt="Dark mode tech UI overlay" class="rounded-xl border border-gray-700 shadow-2xl w-full transform hover:scale-105 transition duration-500">
-                    <img src="https://thunderpic.com"
-                         alt="" class="rounded-xl border border-gray-700 shadow-2xl w-full transform hover:scale-105 transition duration-500">
-                </div>
-            </div>
-        </div>
-    </section>
+const img       = document.getElementById('stream');
+const overlay   = document.getElementById('overlay');
+const status    = document.getElementById('status');
 
-    <!-- CTA -->
-    <section class="py-24 text-center bg-gradient-to-t from-bgdark to-black">
-        <h2 class="text-5xl md:text-6xl font-black mb-8 text-thunder" data-aos="zoom-in">
-            READY TO RUN THUNDER?
-        </h2>
-        <a href="https://discord.gg/RtPD5dnQSw"
-           class="bg-thunder hover:bg-red-600 px-16 py-8 rounded-2xl text-3xl font-bold inline-block transform hover:scale-110 transition duration-500 shadow-2xl"
-           data-aos="zoom-in" data-aos-delay="200">
-            JOIN DISCORD NOW
-        </a>
-        <p class="mt-8 text-xl text-gray-500">Free keyless dropping soon. Premium for max power.</p>
-    </section>
+let reconnectTimer = null;
 
-    <footer class="bg-black py-12 text-center text-gray-600 border-t border-gray-800">
-        <p>Thunder Client 2026.</p>
-    </footer>
+function showMessage(msg, autoHide = false) {
+  status.textContent = msg;
+  overlay.classList.add('visible');
+  if (autoHide) {
+    setTimeout(hideMessage, 1800);
+  }
+}
 
+function hideMessage() {
+  overlay.classList.remove('visible');
+}
+
+function reloadStream() {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  showMessage("Reconnecting…");
+  img.src = STREAM_URL + '?t=' + Date.now();
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else if (document.exitFullscreen) {
+    document.exitFullscreen();
+  }
+}
+
+// ─── Event handlers ──────────────────────────────────────
+
+img.onload = () => {
+  hideMessage();
+  console.log("Stream connected");
+};
+
+img.onerror = () => {
+  showMessage("Connection lost – retrying…");
+  reconnectTimer = setTimeout(reloadStream, 1800);
+};
+
+// Initial load
+showMessage("Starting stream…");
+img.src = STREAM_URL + '?t=' + Date.now();
+
+// Optional: refresh every ~4 hours to survive long ngrok free-tier sessions
+setInterval(() => {
+  if (img.naturalWidth > 20) {  // rough "is working" check
+    reloadStream();
+  }
+}, 4 * 60 * 60 * 1000);
+
+</script>
 </body>
 </html>
