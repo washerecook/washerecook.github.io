@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MiniCord – Simple Discord-style Chat</title>
+  <style>
+    :root {
+      --bg-primary: #36393f;
+      --bg-secondary: #2f3136;
+      --bg-tertiary: #202225;
+      --text-primary: #dcddde;
+      --text-muted: #b9bbbe;
+      --accent: #5865f2;
+      --accent-hover: #4752c4;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    #sidebar {
+      width: 240px;
+      background: var(--bg-tertiary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .server-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin: 16px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: border-radius 0.3s;
+    }
+
+    .server-icon:hover, .server-icon.active {
+      border-radius: 30%;
+    }
+
+    #channels {
+      flex: 1;
+      padding: 8px;
+    }
+
+    .channel {
+      padding: 9px 12px;
+      margin: 2px 0;
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .channel:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .channel.active {
+      background: rgba(88,101,242,0.25);
+      color: white;
+    }
+
+    .channel::before {
+      content: "# ";
+      opacity: 0.6;
+    }
+
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+    }
+
+    #chat-header {
+      height: 48px;
+      background: var(--bg-primary);
+      border-bottom: 1px solid #202225;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .message {
+      display: flex;
+      gap: 16px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      background: #7289da;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+
+    .content .username {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .content .timestamp {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+
+    .text {
+      margin-top: 3px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    #input-area {
+      padding: 12px 20px;
+      background: var(--bg-primary);
+      border-top: 1px solid #202225;
+    }
+
+    #message-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      outline: none;
+      resize: none;
+      min-height: 44px;
+      max-height: 160px;
+      font-family: inherit;
+    }
+
+    #message-input:focus {
+      background: #40444b;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #2f3136;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1e2124;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div id="sidebar">
+    <div class="server-icon active">MC</div>
+    <div id="channels">
+      <div class="channel active" data-id="general">general</div>
+      <div class="channel" data-id="memes">memes</div>
+      <div class="channel" data-id="off-topic">off-topic</div>
+      <div class="channel" data-id="coding">coding</div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="chat-header"># general</div>
+
+    <div id="messages"></div>
+
+    <div id="input-area">
+      <textarea id="message-input" placeholder="Message #general..." rows="1"></textarea>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ────────────────────────────────────────────────
+  // Safe localStorage (works even if blocked on file://)
+  // ────────────────────────────────────────────────
+  function safeGet(key, fallback) {
+    try {
+      const val = localStorage.getItem(key);
+      return val ? JSON.parse(val) : fallback;
+    } catch {
+      console.warn("localStorage blocked – using memory only");
+      return fallback;
+    }
+  }
+
+  function safeSet(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn("Cannot save to localStorage", e);
+    }
+  }
+
+  // ────────────────────────────────────────────────
+  // App state & DOM elements
+  // ────────────────────────────────────────────────
+  const STORAGE_KEY = 'minicord_messages_v2';
+  const messagesDiv   = document.getElementById('messages');
+  const input         = document.getElementById('message-input');
+  const header        = document.getElementById('chat-header');
+  const channelElems  = document.querySelectorAll('.channel');
+
+  let currentChannel = 'general';
+  let messages = safeGet(STORAGE_KEY, {
+    general:   [],
+    memes:     [],
+    'off-topic': [],
+    coding:    []
+  });
+
+  // ────────────────────────────────────────────────
+  // Core functions
+  // ────────────────────────────────────────────────
+  function save() {
+    safeSet(STORAGE_KEY, messages);
+  }
+
+  function render(channel) {
+    messagesDiv.innerHTML = '';
+    (messages[channel] || []).forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'message';
+      div.innerHTML = `
+        <div class="avatar">${m.user[0].toUpperCase()}</div>
+        <div class="content">
+          <div>
+            <span class="username">${m.user}</span>
+            <span class="timestamp">${new Date(m.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+          </div>
+          <div class="text">${m.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        </div>
+      `;
+      messagesDiv.appendChild(div);
+    });
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    if (!messages[currentChannel]) messages[currentChannel] = [];
+
+    messages[currentChannel].push({
+      user: "You",
+      text,
+      time: Date.now()
+    });
+
+    save();
+    render(currentChannel);
+    input.value = '';
+    input.focus();
+  }
+
+  // ────────────────────────────────────────────────
+  // Event listeners
+  // ────────────────────────────────────────────────
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  channelElems.forEach(el => {
+    el.addEventListener('click', () => {
+      channelElems.forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+      currentChannel = el.dataset.id;
+      header.textContent = `# ${currentChannel}`;
+      render(currentChannel);
+    });
+  });
+
+  // Real-time sync across tabs/windows (same browser)
+  window.addEventListener('storage', e => {
+    if (e.key === STORAGE_KEY) {
+      messages = safeGet(STORAGE_KEY, messages);
+      render(currentChannel);
+    }
+  });
+
+  // Initial render + welcome message if first time
+  render(currentChannel);
+
+  if (messages.general.length === 0) {
+    messages.general = [
+      { user: "MiniCord", text: "Hey! This is a local-only Discord clone.", time: Date.now() - 600000 },
+      { user: "MiniCord", text: "Messages sync across tabs (same browser). Open another tab to test!", time: Date.now() - 300000 },
+      { user: "MiniCord", text: "Use a local server (Live Server / python -m http.server) to avoid blank page issues.", time: Date.now() - 120000 }
+    ];
+    save();
+    render(currentChannel);
+  }
+</script>
+</body>
+</html>
