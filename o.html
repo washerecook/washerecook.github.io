@@ -3,227 +3,214 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MiniCord – Global Live Chat</title>
+  <title>Class Chat - Locked</title>
   <style>
-    :root {
-      --bg-primary: #36393f;
-      --bg-secondary: #2f3136;
-      --bg-tertiary: #202225;
-      --text-primary: #dcddde;
-      --text-muted: #b9bbbe;
-      --accent: #5865f2;
-      --accent-hover: #4752c4;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
     body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      margin: 0;
       height: 100vh;
-      display: flex;
-      overflow: hidden;
-    }
-    #app { display: flex; width: 100%; height: 100vh; }
-    #sidebar {
-      width: 240px;
-      background: var(--bg-tertiary);
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: Arial, Helvetica, sans-serif;
       display: flex;
       flex-direction: column;
     }
-    .server-icon {
-      width: 48px; height: 48px;
-      background: var(--accent);
-      border-radius: 50%;
-      margin: 16px auto;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: bold; color: white; font-size: 1.5rem;
+    #lock-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      background: #11111b;
     }
-    #channels { flex:1; padding:8px; }
-    .channel {
-      padding:9px 12px; margin:2px 0; border-radius:5px;
-      color: var(--text-muted); cursor:pointer; user-select:none;
+    #chat-screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
     }
-    .channel:hover { background: rgba(255,255,255,0.05); }
-    .channel.active { background: rgba(88,101,242,0.3); color:white; }
-    .channel::before { content:"# "; opacity:0.6; }
-    #main { flex:1; display:flex; flex-direction:column; background:var(--bg-secondary); }
-    #chat-header {
-      height:48px; background:var(--bg-primary); border-bottom:1px solid #202225;
-      padding:0 20px; display:flex; align-items:center; font-weight:600; font-size:1.1rem;
+    header {
+      background: #181825;
+      padding: 12px 16px;
+      font-weight: bold;
+      border-bottom: 1px solid #313244;
     }
     #messages {
-      flex:1; padding:20px; overflow-y:auto;
-      display:flex; flex-direction:column; gap:18px;
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .message { display:flex; gap:16px; }
-    .avatar {
-      width:40px; height:40px; background:#7289da; border-radius:50%;
-      flex-shrink:0; display:flex; align-items:center; justify-content:center;
-      font-weight:bold; color:white;
+    .msg {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      word-wrap: break-word;
     }
-    .username { font-weight:600; color:#fff; }
-    .timestamp { font-size:0.75rem; color:var(--text-muted); margin-left:8px; }
-    .text { margin-top:3px; line-height:1.4; word-break:break-word; }
+    .msg.sent {
+      align-self: flex-end;
+      background: #89b4fa;
+      color: #1e1e2e;
+    }
+    .msg.received {
+      align-self: flex-start;
+      background: #313244;
+    }
+    .msg .name {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
     #input-area {
-      padding:12px 20px; background:var(--bg-primary); border-top:1px solid #202225;
+      display: flex;
+      padding: 12px;
+      background: #181825;
+      border-top: 1px solid #313244;
     }
-    #message-input {
-      width:100%; padding:12px 16px; background:var(--bg-tertiary);
-      border:none; border-radius:8px; color:white; font-size:1rem;
-      outline:none; resize:none; min-height:44px; max-height:160px; font-family:inherit;
+    #input {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 24px;
+      background: #313244;
+      color: white;
+      outline: none;
+      font-size: 1rem;
     }
-    #message-input:focus { background:#40444b; }
-    ::-webkit-scrollbar { width:6px; }
-    ::-webkit-scrollbar-track { background:#2f3136; }
-    ::-webkit-scrollbar-thumb { background:#1e2124; border-radius:3px; }
+    #input:focus {
+      background: #45475a;
+    }
+    button {
+      margin-left: 8px;
+      padding: 0 20px;
+      background: #89b4fa;
+      color: #1e1e2e;
+      border: none;
+      border-radius: 24px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    input[type="password"], button#unlock {
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: none;
+    }
+    button#unlock {
+      background: #a6e3a1;
+      color: black;
+      font-weight: bold;
+    }
+    #error {
+      color: #f38ba8;
+      min-height: 1.5em;
+    }
   </style>
 </head>
 <body>
 
-<div id="app">
-  <div id="sidebar">
-    <div class="server-icon">MC</div>
-    <div id="channels">
-      <div class="channel active" data-id="general">general</div>
-      <div class="channel" data-id="memes">memes</div>
-      <div class="channel" data-id="off-topic">off-topic</div>
-    </div>
-  </div>
+<div id="lock-screen">
+  <h2>Class Chat</h2>
+  <p>Type the code your friend gave you</p>
+  <input type="password" id="pass" placeholder="password..." autocomplete="off">
+  <button id="unlock">Enter Chat</button>
+  <div id="error"></div>
+</div>
 
-  <div id="main">
-    <div id="chat-header"># general</div>
-    <div id="messages"></div>
-    <div id="input-area">
-      <textarea id="message-input" placeholder="Message #general..." rows="1"></textarea>
-    </div>
+<div id="chat-screen">
+  <header>Class Chat</header>
+  <div id="messages"></div>
+  <div id="input-area">
+    <input id="input" placeholder="Type message... (Enter to send)" autocomplete="off">
+    <button onclick="send()">Send</button>
   </div>
 </div>
 
-<!-- Firebase SDK v12+ modular (as of 2026) -->
-<script type="module">
-  // ────────────────────────────────────────────────
-  // REPLACE THIS WITH YOUR REAL FIREBASE CONFIG !!!
-  // ────────────────────────────────────────────────
-  const firebaseConfig = {
-    apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    authDomain: "your-project.firebaseapp.com",
-    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-    projectId: "your-project",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:xxxxxxxxxxxxxxxxxxxxxx"
+<script>
+  const SECRET = "catnip2025"; // ← CHANGE THIS TO WHATEVER YOU WANT (tell your friends)
+
+  const lock = document.getElementById("lock-screen");
+  const chat = document.getElementById("chat-screen");
+  const error = document.getElementById("error");
+  const passInput = document.getElementById("pass");
+  const messages = document.getElementById("messages");
+  const input = document.getElementById("input");
+
+  let name = localStorage.getItem("chat_name") || "";
+
+  // Unlock screen
+  document.getElementById("unlock").onclick = () => {
+    if (passInput.value === SECRET) {
+      lock.style.display = "none";
+      chat.style.display = "flex";
+
+      if (!name) {
+        name = prompt("Pick a short name (will be saved)")?.trim() || "Anon";
+        localStorage.setItem("chat_name", name);
+      }
+
+      loadMessages();
+    } else {
+      error.textContent = "Wrong code bro 😭";
+    }
   };
 
-  // Imports (latest modular style)
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-  import { getDatabase, ref, push, onValue, serverTimestamp, set } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-
-  const messagesDiv = document.getElementById('messages');
-  const input = document.getElementById('message-input');
-  const header = document.getElementById('chat-header');
-  const channelElems = document.querySelectorAll('.channel');
-
-  let currentChannel = 'general';
-  let username = localStorage.getItem('minicord_username') || null;
-
-  // Get or set username (prompt only once)
-  if (!username) {
-    username = prompt("Enter your display name (or leave blank for Guest):")?.trim() || `Guest${Math.floor(Math.random()*10000)}`;
-    localStorage.setItem('minicord_username', username);
-  }
-
-  // Auto sign-in anonymously
-  signInAnonymously(auth)
-    .catch((error) => {
-      console.error("Anonymous auth failed:", error);
-      alert("Connection issue – try refreshing");
-    });
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      console.log("Signed in anonymously as:", user.uid);
-      listenToChannel(currentChannel);
-    }
+  // Also allow Enter on password field
+  passInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") document.getElementById("unlock").click();
   });
 
-  function getChannelRef(channel) {
-    return ref(db, `channels/${channel}/messages`);
+  // Load old messages
+  function loadMessages() {
+    const saved = localStorage.getItem("class_chat_msgs");
+    if (saved) {
+      JSON.parse(saved).forEach(addMessage);
+    }
+    messages.scrollTop = messages.scrollHeight;
   }
 
-  function renderMessage(msg) {
-    const div = document.createElement('div');
-    div.className = 'message';
-    const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : 'now';
+  function addMessage({name: n, text, time}) {
+    const div = document.createElement("div");
+    div.className = `msg ${n === name ? "sent" : "received"}`;
     div.innerHTML = `
-      <div class="avatar">${msg.user[0].toUpperCase()}</div>
-      <div class="content">
-        <div>
-          <span class="username">${msg.user}</span>
-          <span class="timestamp">${time}</span>
-        </div>
-        <div class="text">${(msg.text || '').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-      </div>
+      <div class="name">${n}${n === name ? " (you)" : ""}</div>
+      ${text}
     `;
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    messages.appendChild(div);
   }
 
-  function listenToChannel(channel) {
-    messagesDiv.innerHTML = '';
-    onValue(getChannelRef(channel), (snapshot) => {
-      messagesDiv.innerHTML = '';
-      const data = snapshot.val();
-      if (data) {
-        Object.values(data).forEach(renderMessage);
-      }
-    }, { onlyOnce: false });
-  }
-
-  function sendMessage() {
-    const text = input.value.trim();
-    if (!text || !auth.currentUser) return;
-
-    push(getChannelRef(currentChannel), {
-      user: username,
-      text: text,
-      timestamp: serverTimestamp(),
-      uid: auth.currentUser.uid  // for potential future moderation
+  function saveMessages() {
+    const arr = [];
+    messages.querySelectorAll(".msg").forEach(msg => {
+      const nameEl = msg.querySelector(".name");
+      arr.push({
+        name: nameEl.textContent.replace(" (you)", ""),
+        text: msg.lastChild.textContent.trim(),
+        time: Date.now()
+      });
     });
-
-    input.value = '';
-    input.focus();
+    localStorage.setItem("class_chat_msgs", JSON.stringify(arr));
   }
 
-  // Events
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage({name, text, time: Date.now()});
+    saveMessages();
+
+    input.value = "";
+    input.focus();
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      send();
     }
   });
-
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 160) + 'px';
-  });
-
-  channelElems.forEach(el => {
-    el.addEventListener('click', () => {
-      channelElems.forEach(e => e.classList.remove('active'));
-      el.classList.add('active');
-      currentChannel = el.dataset.id;
-      header.textContent = `# ${currentChannel}`;
-      listenToChannel(currentChannel);
-    });
-  });
-
-  // Welcome message (you can remove or add via Firebase console too)
-  // For now, it only shows if channel is empty – but skipped here to avoid spam
 </script>
 </body>
 </html>
