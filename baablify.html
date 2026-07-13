@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baablify</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #05070c;
+    --panel: #0b0f1a;
+    --panel-2: #0f1524;
+    --panel-3: #141b2e;
+    --line: #1c2540;
+    --blue: #3b82f6;
+    --blue-glow: #6aa4ff;
+    --blue-deep: #17255c;
+    --text: #e8edf7;
+    --text-dim: #8792ab;
+    --text-faint: #4d5670;
+    --online: #34d399;
+    --danger: #f87171;
+    --radius: 14px;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: var(--void);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(59,130,246,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 100%, rgba(59,130,246,0.06), transparent 60%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection{ background: rgba(59,130,246,0.35); }
+  ::-webkit-scrollbar{ width: 8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--line); border-radius: 8px; }
+  ::-webkit-scrollbar-track{ background: transparent; }
+
+  .hidden{ display:none !important; }
+
+  .app{
+    max-width: 1180px;
+    height: 100vh;
+    max-height: 860px;
+    margin: 24px auto;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px -40px rgba(0,0,0,0.7);
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display:flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 20px 20px 16px 20px;
+  }
+  .brand-mark{
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(160deg, var(--blue), var(--blue-deep));
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    box-shadow: 0 0 0 1px rgba(106,164,255,0.25), 0 8px 20px -6px rgba(59,130,246,0.6);
+  }
+  .brand-mark svg{ width:18px; height:18px; }
+  .brand-name{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size: 19px;
+    letter-spacing: -0.02em;
+  }
+  .brand-name span{ color: var(--blue-glow); }
+  .brand-sub{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    margin-top: 1px;
+  }
+
+  .me-row{
+    margin: 0 16px 14px 16px;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .avatar{
+    width: 34px; height:34px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    color:#fff;
+    flex-shrink:0;
+    position:relative;
+  }
+  .me-row .avatar{ width:30px; height:30px; font-size:12px; }
+  .me-name{ font-size: 13.5px; font-weight:600; }
+  .me-tag{ font-family:'JetBrains Mono',monospace; font-size:10px; color: var(--text-faint); }
+  .me-edit{
+    margin-left:auto;
+    background:none; border:none; color: var(--text-faint);
+    cursor:pointer; padding:4px; border-radius:6px;
+  }
+  .me-edit:hover{ color: var(--danger); background: rgba(248,113,113,0.1); }
+
+  .tabs{
+    display:flex;
+    gap: 4px;
+    margin: 0 16px 10px 16px;
+    background: var(--void);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 3px;
+  }
+  .tab-btn{
+    flex:1;
+    background:none;
+    border:none;
+    color: var(--text-dim);
+    font-family:'Inter', sans-serif;
+    font-size: 12.5px;
+    font-weight:600;
+    padding: 7px 0;
+    border-radius: 8px;
+    cursor:pointer;
+  }
+  .tab-btn.active{ background: var(--blue-deep); color: var(--blue-glow); }
+
+  .search-wrap{ padding: 0 16px 10px 16px; position:relative; }
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background: var(--void);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 12px;
+  }
+  .search-box svg{ width:14px; height:14px; color:var(--text-faint); flex-shrink:0; }
+  .search-box input{
+    background:none; border:none; outline:none;
+    color: var(--text); font-size: 13px; width:100%;
+    font-family:'Inter', sans-serif;
+  }
+  .search-box input::placeholder{ color: var(--text-faint); }
+
+  .people-results{
+    position:absolute;
+    left:16px; right:16px; top: 100%;
+    background: var(--panel-3);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y:auto;
+    z-index: 5;
+    box-shadow: 0 20px 40px -20px rgba(0,0,0,0.7);
+  }
+  .people-result{
+    display:flex; align-items:center; gap:10px;
+    padding: 9px 12px;
+    cursor:pointer;
+  }
+  .people-result:hover{ background: var(--panel-2); }
+  .people-empty{
+    padding: 12px; font-size:12px; color: var(--text-faint); text-align:center;
+  }
+
+  .new-convo{
+    margin: 0 16px 10px 16px;
+    display:flex; gap:8px;
+  }
+  .new-convo input{
+    flex:1;
+    background: var(--void);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 12.5px;
+    outline:none;
+    font-family:'Inter', sans-serif;
+  }
+  .new-convo input:focus{ border-color: var(--blue); }
+  .new-convo button{
+    background: var(--blue-deep);
+    color: var(--blue-glow);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+  }
+  .new-convo button:hover{ background: var(--blue); color:#fff; }
+
+  .convo-list{
+    flex:1;
+    overflow-y: auto;
+    padding: 4px 10px 12px 10px;
+  }
+  .convo-list-label{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    padding: 8px 10px 6px 10px;
+    text-transform: uppercase;
+  }
+  .convo{
+    display:flex;
+    align-items:center;
+    gap: 11px;
+    padding: 10px;
+    border-radius: 12px;
+    cursor:pointer;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+    position: relative;
+  }
+  .convo:hover{ background: var(--panel-2); }
+  .convo.active{
+    background: var(--panel-3);
+    border-color: var(--blue-deep);
+  }
+  .convo.active::before{
+    content:'';
+    position:absolute; left:-10px; top:50%; transform: translateY(-50%);
+    width:3px; height: 60%;
+    background: var(--blue);
+    border-radius: 4px;
+  }
+  .convo-avatar-wrap{ position:relative; flex-shrink:0; }
+  .convo-body{ min-width:0; flex:1; }
+  .convo-top{ display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+  .convo-name{ font-size: 13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .convo-time{ font-family:'JetBrains Mono',monospace; font-size:10px; color: var(--text-faint); flex-shrink:0; }
+  .convo-preview{ font-size: 12px; color: var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+  .empty-list-note{
+    padding: 14px 10px; font-size:12px; color: var(--text-faint); text-align:center; line-height:1.5;
+  }
+
+  /* ---------- Chat pane ---------- */
+  .chat{
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    background: var(--panel-2);
+    position:relative;
+  }
+
+  .chat-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink:0;
+  }
+  .chat-back{
+    display:none;
+    background:none; border:none; color:var(--text-dim); cursor:pointer;
+    padding: 4px;
+  }
+  .chat-header .avatar{ width: 38px; height:38px; }
+  .chat-title{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size: 15px; }
+  .chat-status{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    display:flex; align-items:center; gap:5px;
+  }
+  .chat-status .dot{ width:6px; height:6px; border-radius:50%; background: var(--online); }
+
+  .messages{
+    flex:1;
+    overflow-y:auto;
+    padding: 22px;
+    display:flex;
+    flex-direction:column;
+    gap: 3px;
+  }
+  .day-divider{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 18px 0 14px 0;
+  }
+  .msg-row{ display:flex; margin-bottom: 10px; flex-direction:column; }
+  .msg-row.mine{ align-items:flex-end; }
+  .msg-row.theirs{ align-items:flex-start; }
+  .msg-author{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+    margin: 0 4px 3px 4px;
+  }
+  .bubble{
+    max-width: 62%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.45;
+    position: relative;
+    animation: land 0.28s ease;
+    word-wrap: break-word;
+  }
+  @keyframes land{
+    from{ opacity:0; transform: translateY(6px) scale(0.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+  .msg-row.theirs .bubble{
+    background: var(--panel-3);
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-row.mine .bubble{
+    background: linear-gradient(160deg, var(--blue), #2f66d9);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 6px 18px -8px rgba(59,130,246,0.7);
+  }
+  .msg-time{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    opacity: 0.55;
+    margin-top: 4px;
+    display:block;
+  }
+
+  .composer{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--line);
+    flex-shrink:0;
+  }
+  .wave{
+    display:flex;
+    align-items:center;
+    gap: 3px;
+    height: 22px;
+    flex-shrink:0;
+    width: 44px;
+  }
+  .wave i{
+    display:block;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--blue-deep);
+    height: 6px;
+    transition: height 0.12s ease, background 0.12s ease;
+  }
+  .wave.active i{ background: var(--blue-glow); }
+
+  .composer-input{
+    flex:1;
+    background: var(--panel-3);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 11px 16px;
+    color: var(--text);
+    font-size: 14px;
+    outline:none;
+    resize:none;
+    max-height: 110px;
+    font-family:'Inter', sans-serif;
+    line-height: 1.4;
+  }
+  .composer-input:focus{ border-color: var(--blue); }
+  .composer-input::placeholder{ color: var(--text-faint); }
+
+  .send-btn{
+    width: 42px; height:42px;
+    border-radius: 12px;
+    border:none;
+    background: var(--blue);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .send-btn:hover{ background: var(--blue-glow); transform: translateY(-1px); }
+  .send-btn:active{ transform: translateY(0); }
+  .send-btn:disabled{ opacity:0.5; cursor:default; transform:none; }
+  .send-btn svg{ width:17px; height:17px; }
+
+  /* ---------- Empty state ---------- */
+  .empty-state{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap: 14px;
+    padding: 40px;
+    text-align:center;
+  }
+  .empty-wave{ display:flex; gap:4px; align-items:center; height:40px; }
+  .empty-wave i{
+    width:4px; border-radius:3px;
+    background: var(--blue-deep);
+    animation: idle 2.2s ease-in-out infinite;
+  }
+  @keyframes idle{
+    0%,100%{ height: 8px; opacity:0.5; }
+    50%{ height: 32px; opacity:1; background: var(--blue-glow); }
+  }
+  .empty-title{ font-family:'Space Grotesk', sans-serif; font-size:18px; font-weight:600; }
+  .empty-sub{ font-size:13px; color: var(--text-dim); max-width: 320px; line-height:1.5; }
+
+  /* ---------- Modal / Auth ---------- */
+  .modal-overlay{
+    position: fixed; inset:0;
+    background: rgba(3,5,10,0.85);
+    backdrop-filter: blur(4px);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 50;
+  }
+  .modal{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 28px;
+    width: 360px;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.8);
+  }
+  .modal-mark{
+    width: 44px; height:44px; border-radius: 12px;
+    background: linear-gradient(160deg, var(--blue), var(--blue-deep));
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom: 16px;
+  }
+  .modal-mark svg{ width:22px; height:22px; }
+  .modal h2{ font-family:'Space Grotesk',sans-serif; font-size:18px; margin: 0 0 6px 0; }
+  .modal p{ font-size: 13px; color: var(--text-dim); margin: 0 0 18px 0; line-height:1.5; }
+  .modal input{
+    width:100%;
+    background: var(--void);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 11px 13px;
+    color: var(--text);
+    font-size: 14px;
+    outline:none;
+    font-family:'Inter',sans-serif;
+    margin-bottom: 12px;
+  }
+  .modal input:focus{ border-color: var(--blue); }
+  .modal button.primary{
+    width:100%;
+    background: var(--blue);
+    color:#fff;
+    border:none;
+    border-radius: 10px;
+    padding: 11px;
+    font-size: 14px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .modal button.primary:hover{ background: var(--blue-glow); }
+  .modal button.primary:disabled{ opacity:0.55; cursor:default; }
+  .auth-error{
+    font-size: 12.5px;
+    color: var(--danger);
+    margin: -4px 0 12px 0;
+    min-height: 15px;
+  }
+  .auth-switch{
+    text-align:center;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    margin-top: 14px;
+  }
+  .auth-switch a{ color: var(--blue-glow); cursor:pointer; text-decoration:none; }
+  .auth-switch a:hover{ text-decoration:underline; }
+  .field-hint{ font-family:'JetBrains Mono', monospace; font-size:10px; color: var(--text-faint); margin: -8px 0 12px 0; }
+
+  .device-note{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    color: var(--text-faint);
+    text-align:center;
+    padding: 6px 0 0 0;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 760px){
+    .app{ grid-template-columns: 1fr; margin:0; height:100vh; max-height:none; border-radius:0; border:none; }
+    .sidebar{ display: flex; }
+    .app.chat-open .sidebar{ display:none; }
+    .app:not(.chat-open) .chat{ display:none; }
+    .chat-back{ display:flex; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal">
+    <div class="modal-mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <h2 id="authTitle">Log in to Baablify</h2>
+    <p id="authSub">Chat with real people, in real rooms and DMs.</p>
+
+    <input id="authUsername" placeholder="Username" maxlength="20" autocomplete="username">
+    <div class="field-hint" id="usernameHint">letters, numbers, underscores — 3 to 20 characters</div>
+    <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password">
+    <input id="authPasswordConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" class="hidden">
+
+    <div class="auth-error" id="authError"></div>
+    <button class="primary" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch">New here? <a id="authSwitchLink">Create an account</a></div>
+  </div>
+</div>
+
+<!-- CONFIG NOTICE (shown if firebaseConfig hasn't been filled in) -->
+<div class="modal-overlay hidden" id="configOverlay">
+  <div class="modal" style="width:420px">
+    <div class="modal-mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h2>Firebase config needed</h2>
+    <p>This app needs to be connected to a free Firebase project before real accounts and chat will work. Open <code>index.html</code>, find the <code>firebaseConfig</code> object near the top of the script, and paste in your project's config. See the README for the exact steps.</p>
+  </div>
+</div>
+
+<div class="app hidden" id="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">baabl<span>ify</span></div>
+        <div class="brand-sub">// live signal network</div>
+      </div>
+    </div>
+
+    <div class="me-row">
+      <div class="avatar" id="meAvatar" style="background:var(--blue-deep)"></div>
+      <div>
+        <div class="me-name" id="meName">You</div>
+        <div class="me-tag" id="meTag">@you</div>
+      </div>
+      <button class="me-edit" id="logoutBtn" title="Log out">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabRooms">Rooms</button>
+      <button class="tab-btn" id="tabDms">Direct Messages</button>
+    </div>
+
+    <!-- ROOMS VIEW -->
+    <div id="roomsView">
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="roomSearchInput" placeholder="Search rooms">
+        </div>
+      </div>
+      <div class="new-convo">
+        <input id="newRoomInput" placeholder="New room name">
+        <button id="newRoomBtn">Create</button>
+      </div>
+      <div class="convo-list" id="roomList">
+        <div class="convo-list-label">Public rooms</div>
+      </div>
+    </div>
+
+    <!-- DMS VIEW -->
+    <div id="dmsView" class="hidden" style="display:none; flex-direction:column; min-height:0; flex:1;">
+      <div class="search-wrap">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="peopleSearchInput" placeholder="Find a username to message">
+        </div>
+        <div class="people-results hidden" id="peopleResults"></div>
+      </div>
+      <div class="convo-list" id="dmList">
+        <div class="convo-list-label">Direct messages</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT PANE (populated by JS) -->
+  <div class="chat" id="chatPane"></div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, runTransaction, collection,
+    query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  /* =========================================================
+     1. PASTE YOUR FIREBASE PROJECT CONFIG HERE
+     Firebase console -> Project settings -> General -> Your apps -> SDK setup
+     ========================================================= */
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBRsRuDT0W87qfiZ-fNXqdV9pcm07cuxsc",
+  authDomain: "baablify.firebaseapp.com",
+  projectId: "baablify",
+  storageBucket: "baablify.firebasestorage.app",
+  messagingSenderId: "933308887702",
+  appId: "1:933308887702:web:d0ebf64daf6f49ab8048b7",
+  measurementId: "G-198LGZH5P3"
+};
+
+  const isConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf("YOUR_") !== 0;
+  if(!isConfigured){
+    document.getElementById('configOverlay').classList.remove('hidden');
+    document.getElementById('authOverlay').classList.add('hidden');
+  }
+
+  let fbApp, auth, db;
+  if(isConfigured){
+    fbApp = initializeApp(firebaseConfig);
+    auth = getAuth(fbApp);
+    db = getFirestore(fbApp);
+  }
+
+  /* ---------- Helpers ---------- */
+  const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#ef4444','#6366f1'];
+  function colorFor(str){
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = str.charCodeAt(i) + ((h<<5)-h); }
+    return COLORS[Math.abs(h) % COLORS.length];
+  }
+  function initials(name){
+    return (name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('') || '?';
+  }
+  function slugify(str){
+    return str.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'room';
+  }
+  function usernameValid(u){ return /^[a-zA-Z0-9_]{3,20}$/.test(u); }
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+  function fmtTime(ts){
+    if(!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+  function dayLabel(ts){
+    if(!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const today = new Date();
+    if(d.toDateString() === today.toDateString()) return 'Today';
+    return d.toLocaleDateString([], {month:'short', day:'numeric'});
+  }
+  function dmIdFor(uidA, uidB){ return [uidA, uidB].sort().join('_'); }
+
+  /* ---------- State ---------- */
+  let me = null;
+  let activeChat = null;
+  let unsubMessages = null;
+  let unsubRoomList = null;
+  let unsubDmList = null;
+  let roomCache = [];
+  let dmCache = [];
+
+  /* ---------- DOM refs ---------- */
+  const appEl = document.getElementById('app');
+  const authOverlay = document.getElementById('authOverlay');
+  const authTitle = document.getElementById('authTitle');
+  const authSub = document.getElementById('authSub');
+  const authUsername = document.getElementById('authUsername');
+  const authPassword = document.getElementById('authPassword');
+  const authPasswordConfirm = document.getElementById('authPasswordConfirm');
+  const authError = document.getElementById('authError');
+  const authSubmit = document.getElementById('authSubmit');
+  const authSwitch = document.getElementById('authSwitch');
+  const meAvatar = document.getElementById('meAvatar');
+  const meName = document.getElementById('meName');
+  const meTag = document.getElementById('meTag');
+  const chatPane = document.getElementById('chatPane');
+  const roomList = document.getElementById('roomList');
+  const dmList = document.getElementById('dmList');
+  const roomSearchInput = document.getElementById('roomSearchInput');
+  const peopleSearchInput = document.getElementById('peopleSearchInput');
+  const peopleResults = document.getElementById('peopleResults');
+  const tabRooms = document.getElementById('tabRooms');
+  const tabDms = document.getElementById('tabDms');
+  const roomsView = document.getElementById('roomsView');
+  const dmsView = document.getElementById('dmsView');
+
+  /* ---------- Auth mode toggle ---------- */
+  let mode = 'login';
+  function bindSwitchLink(){
+    const link = document.getElementById('authSwitchLink');
+    if(link){
+      link.addEventListener('click', () => {
+        mode = mode === 'login' ? 'signup' : 'login';
+        applyAuthMode();
+      });
+    }
+  }
+  function applyAuthMode(){
+    authError.textContent = '';
+    if(mode === 'login'){
+      authTitle.textContent = 'Log in to Baablify';
+      authSub.textContent = 'Chat with real people, in real rooms and DMs.';
+      authPasswordConfirm.classList.add('hidden');
+      authSubmit.textContent = 'Log in';
+      authSwitch.innerHTML = 'New here? <a id="authSwitchLink">Create an account</a>';
+    } else {
+      authTitle.textContent = 'Create your account';
+      authSub.textContent = 'Pick a username — it has to be unique, no one else can take it.';
+      authPasswordConfirm.classList.remove('hidden');
+      authSubmit.textContent = 'Create account';
+      authSwitch.innerHTML = 'Already have an account? <a id="authSwitchLink">Log in</a>';
+    }
+    bindSwitchLink();
+  }
+
+  authSubmit.addEventListener('click', handleAuthSubmit);
+  [authUsername, authPassword, authPasswordConfirm].forEach(el => {
+    el.addEventListener('keydown', e => { if(e.key === 'Enter') handleAuthSubmit(); });
+  });
+
+  async function handleAuthSubmit(){
+    authError.textContent = '';
+    const username = authUsername.value.trim();
+    const password = authPassword.value;
+    if(!usernameValid(username)){
+      authError.textContent = 'Username must be 3-20 characters: letters, numbers, underscores only.';
+      return;
+    }
+    if(password.length < 6){
+      authError.textContent = 'Password must be at least 6 characters.';
+      return;
+    }
+    authSubmit.disabled = true;
+    authSubmit.textContent = mode === 'login' ? 'Logging in…' : 'Creating account…';
+    const usernameLower = username.toLowerCase();
+    const syntheticEmail = usernameLower + '@baablify.app';
+
+    try{
+      if(mode === 'signup'){
+        if(password !== authPasswordConfirm.value){
+          throw { code: 'custom/mismatch' };
+        }
+        const cred = await createUserWithEmailAndPassword(auth, syntheticEmail, password);
+        const uid = cred.user.uid;
+        try{
+          await runTransaction(db, async (tx) => {
+            const ref = doc(db, 'usernames', usernameLower);
+            const snap = await tx.get(ref);
+            if(snap.exists()) throw { code:'custom/taken' };
+            tx.set(ref, { uid, username });
+          });
+        } catch(claimErr){
+          await cred.user.delete().catch(()=>{});
+          throw { code:'custom/taken' };
+        }
+        await setDoc(doc(db, 'users', uid), {
+          username, usernameLower, createdAt: serverTimestamp()
+        });
+      } else {
+        await signInWithEmailAndPassword(auth, syntheticEmail, password);
+      }
+    } catch(err){
+      authError.textContent = friendlyAuthError(err);
+      authSubmit.disabled = false;
+      authSubmit.textContent = mode === 'login' ? 'Log in' : 'Create account';
+    }
+  }
+
+  function friendlyAuthError(err){
+    const code = err && err.code || '';
+    if(code === 'custom/taken') return 'That username is already taken.';
+    if(code === 'custom/mismatch') return 'Passwords do not match.';
+    if(code === 'auth/email-already-in-use') return 'That username is already taken.';
+    if(code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') return 'Incorrect username or password.';
+    if(code === 'auth/weak-password') return 'Password is too weak — use at least 6 characters.';
+    if(code === 'auth/network-request-failed') return 'Network error — check your connection.';
+    return 'Something went wrong. Please try again.';
+  }
+
+  applyAuthMode();
+
+  /* ---------- Auth state ---------- */
+  if(isConfigured){
+    onAuthStateChanged(auth, async (user) => {
+      if(user){
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const data = snap.exists() ? snap.data() : { username: 'unknown', usernameLower: 'unknown' };
+        me = { uid: user.uid, username: data.username, usernameLower: data.usernameLower };
+        authOverlay.classList.add('hidden');
+        appEl.classList.remove('hidden');
+        renderMe();
+        startRoomsListener();
+        startDmsListener();
+        renderChat();
+        authUsername.value = '';
+        authPassword.value = '';
+        authPasswordConfirm.value = '';
+        authSubmit.disabled = false;
+      } else {
+        me = null;
+        activeChat = null;
+        if(unsubMessages) unsubMessages();
+        if(unsubRoomList) unsubRoomList();
+        if(unsubDmList) unsubDmList();
+        appEl.classList.add('hidden');
+        authOverlay.classList.remove('hidden');
+      }
+    });
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    if(confirm('Log out of Baablify?')) signOut(auth);
+  });
+
+  function renderMe(){
+    meAvatar.textContent = initials(me.username);
+    meAvatar.style.background = colorFor(me.username);
+    meName.textContent = me.username;
+    meTag.textContent = '@' + me.usernameLower;
+  }
+
+  /* ---------- Tabs ---------- */
+  tabRooms.addEventListener('click', () => switchTab('rooms'));
+  tabDms.addEventListener('click', () => switchTab('dms'));
+  function switchTab(tab){
+    tabRooms.classList.toggle('active', tab === 'rooms');
+    tabDms.classList.toggle('active', tab === 'dms');
+    roomsView.style.display = tab === 'rooms' ? 'block' : 'none';
+    dmsView.style.display = tab === 'dms' ? 'flex' : 'none';
+  }
+
+  /* ---------- Rooms ---------- */
+  async function ensureDefaultRooms(){
+    const defaults = [{ id:'general', name:'general' }, { id:'random', name:'random' }];
+    for(const r of defaults){
+      const ref = doc(db, 'rooms', r.id);
+      const snap = await getDoc(ref);
+      if(!snap.exists()){
+        await setDoc(ref, { name: r.name, createdAt: serverTimestamp(), createdBy: me.uid }).catch(()=>{});
+      }
+    }
+  }
+
+  function startRoomsListener(){
+    ensureDefaultRooms();
+    const q = query(collection(db, 'rooms'), orderBy('createdAt', 'asc'));
+    if(unsubRoomList) unsubRoomList();
+    unsubRoomList = onSnapshot(q, (snap) => {
+      roomCache = [];
+      snap.forEach(d => roomCache.push({ id: d.id, ...d.data() }));
+      if(!activeChat && roomCache.length){
+        selectRoom(roomCache[0].id, roomCache[0].name);
+      }
+      renderRoomList();
+    });
+  }
+
+  function renderRoomList(){
+    const q = (roomSearchInput.value || '').toLowerCase();
+    roomList.innerHTML = '<div class="convo-list-label">Public rooms</div>';
+    const filtered = roomCache.filter(r => r.name.toLowerCase().includes(q));
+    if(!filtered.length){
+      roomList.innerHTML += '<div class="empty-list-note">No rooms match. Create one above.</div>';
+      return;
+    }
+    filtered.forEach(r => {
+      const active = activeChat && activeChat.type === 'room' && activeChat.id === r.id;
+      const el = document.createElement('div');
+      el.className = 'convo' + (active ? ' active' : '');
+      el.innerHTML = `
+        <div class="convo-avatar-wrap">
+          <div class="avatar" style="background:${colorFor(r.name)}">${initials(r.name)}</div>
+        </div>
+        <div class="convo-body">
+          <div class="convo-top"><div class="convo-name">#${escapeHtml(r.name)}</div></div>
+          <div class="convo-preview">Public room</div>
+        </div>`;
+      el.addEventListener('click', () => selectRoom(r.id, r.name));
+      roomList.appendChild(el);
+    });
+  }
+
+  document.getElementById('newRoomBtn').addEventListener('click', createRoom);
+  document.getElementById('newRoomInput').addEventListener('keydown', e => { if(e.key === 'Enter') createRoom(); });
+  async function createRoom(){
+    const input = document.getElementById('newRoomInput');
+    const raw = input.value.trim();
+    if(!raw) return;
+    const id = slugify(raw);
+    const ref = doc(db, 'rooms', id);
+    const snap = await getDoc(ref);
+    if(!snap.exists()){
+      await setDoc(ref, { name: raw, createdAt: serverTimestamp(), createdBy: me.uid });
+    }
+    input.value = '';
+    selectRoom(id, raw);
+  }
+
+  roomSearchInput.addEventListener('input', renderRoomList);
+
+  function selectRoom(id, name){
+    activeChat = { type:'room', id, name };
+    appEl.classList.add('chat-open');
+    renderRoomList();
+    renderChat();
+    listenMessages();
+  }
+
+  /* ---------- Direct messages ---------- */
+  function startDmsListener(){
+    const q = query(collection(db, 'dms'), where('members', 'array-contains', me.uid));
+    if(unsubDmList) unsubDmList();
+    unsubDmList = onSnapshot(q, (snap) => {
+      dmCache = [];
+      snap.forEach(d => {
+        const data = d.data();
+        const otherIdx = data.members[0] === me.uid ? 1 : 0;
+        dmCache.push({
+          id: d.id,
+          otherUid: data.members[otherIdx],
+          otherUsername: data.memberUsernames ? data.memberUsernames[otherIdx] : 'user'
+        });
+      });
+      renderDmList();
+    });
+  }
+
+  function renderDmList(){
+    dmList.innerHTML = '<div class="convo-list-label">Direct messages</div>';
+    if(!dmCache.length){
+      dmList.innerHTML += '<div class="empty-list-note">No conversations yet. Search a username above to start one.</div>';
+      return;
+    }
+    dmCache.forEach(c => {
+      const active = activeChat && activeChat.type === 'dm' && activeChat.id === c.id;
+      const el = document.createElement('div');
+      el.className = 'convo' + (active ? ' active' : '');
+      el.innerHTML = `
+        <div class="convo-avatar-wrap">
+          <div class="avatar" style="background:${colorFor(c.otherUsername)}">${initials(c.otherUsername)}</div>
+        </div>
+        <div class="convo-body">
+          <div class="convo-top"><div class="convo-name">${escapeHtml(c.otherUsername)}</div></div>
+          <div class="convo-preview">Direct message</div>
+        </div>`;
+      el.addEventListener('click', () => selectDm(c.id, c.otherUsername, c.otherUid));
+      dmList.appendChild(el);
+    });
+  }
+
+  function selectDm(id, otherUsername, otherUid){
+    activeChat = { type:'dm', id, name: otherUsername, otherUid };
+    appEl.classList.add('chat-open');
+    renderDmList();
+    renderChat();
+    listenMessages();
+  }
+
+  /* ---------- People search ---------- */
+  let peopleSearchTimer = null;
+  peopleSearchInput.addEventListener('input', () => {
+    clearTimeout(peopleSearchTimer);
+    const term = peopleSearchInput.value.trim().toLowerCase();
+    if(!term){ peopleResults.classList.add('hidden'); return; }
+    peopleSearchTimer = setTimeout(() => searchPeople(term), 250);
+  });
+  async function searchPeople(term){
+    const q = query(
+      collection(db, 'usernames'),
+      orderBy('__name__'),
+      where('__name__', '>=', term),
+      where('__name__', '<=', term + '\uf8ff'),
+      limit(8)
+    );
+    const snap = await getDocs(q);
+    peopleResults.innerHTML = '';
+    let count = 0;
+    snap.forEach(d => {
+      const data = d.data();
+      if(data.uid === me.uid) return;
+      count++;
+      const row = document.createElement('div');
+      row.className = 'people-result';
+      row.innerHTML = `
+        <div class="avatar" style="background:${colorFor(data.username)}; width:28px; height:28px; font-size:11px;">${initials(data.username)}</div>
+        <div style="font-size:13px; font-weight:600;">${escapeHtml(data.username)}</div>`;
+      row.addEventListener('click', () => startDm(data.uid, data.username));
+      peopleResults.appendChild(row);
+    });
+    if(!count){
+      peopleResults.innerHTML = '<div class="people-empty">No matching usernames</div>';
+    }
+    peopleResults.classList.remove('hidden');
+  }
+  document.addEventListener('click', (e) => {
+    if(!peopleResults.contains(e.target) && e.target !== peopleSearchInput){
+      peopleResults.classList.add('hidden');
+    }
+  });
+
+  async function startDm(otherUid, otherUsername){
+    const id = dmIdFor(me.uid, otherUid);
+    const ref = doc(db, 'dms', id);
+    const snap = await getDoc(ref);
+    if(!snap.exists()){
+      const members = [me.uid, otherUid].sort();
+      const memberUsernames = members[0] === me.uid ? [me.username, otherUsername] : [otherUsername, me.username];
+      await setDoc(ref, { members, memberUsernames, updatedAt: serverTimestamp() });
+    }
+    peopleSearchInput.value = '';
+    peopleResults.classList.add('hidden');
+    switchTab('dms');
+    selectDm(id, otherUsername, otherUid);
+  }
+
+  /* ---------- Chat pane ---------- */
+  function renderChat(){
+    if(!activeChat){
+      chatPane.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-wave">
+            ${Array.from({length:9}).map((_,i)=>`<i style="animation-delay:${i*0.09}s"></i>`).join('')}
+          </div>
+          <div class="empty-title">No conversation selected</div>
+          <div class="empty-sub">Pick a room, or search a username under Direct Messages to start talking.</div>
+        </div>`;
+      return;
+    }
+
+    const label = activeChat.type === 'room' ? '#' + activeChat.name : activeChat.name;
+    const statusText = activeChat.type === 'room' ? 'public room · synced live' : 'direct message · synced live';
+
+    chatPane.innerHTML = `
+      <div class="chat-header">
+        <button class="chat-back" id="backBtn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="avatar" style="background:${colorFor(activeChat.name)}">${initials(activeChat.name)}</div>
+        <div>
+          <div class="chat-title">${escapeHtml(label)}</div>
+          <div class="chat-status"><span class="dot"></span>${statusText}</div>
+        </div>
+      </div>
+      <div class="messages" id="messagesEl"></div>
+      <div class="composer">
+        <div class="wave" id="waveEl">
+          ${Array.from({length:9}).map(()=>`<i></i>`).join('')}
+        </div>
+        <textarea class="composer-input" id="msgInput" rows="1" placeholder="Message ${escapeHtml(label)}"></textarea>
+        <button class="send-btn" id="sendBtn">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 20l16-8L4 4v6l10 2-10 2v6z" fill="white"/></svg>
+        </button>
+      </div>
+      <div class="device-note">messages are stored in Firestore and sync live across every device you're logged in on</div>
+    `;
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      appEl.classList.remove('chat-open');
+    });
+
+    wireComposer();
+  }
+
+  function messagesCollectionRef(){
+    if(activeChat.type === 'room') return collection(db, 'rooms', activeChat.id, 'messages');
+    return collection(db, 'dms', activeChat.id, 'messages');
+  }
+
+  function listenMessages(){
+    if(unsubMessages) unsubMessages();
+    const q = query(messagesCollectionRef(), orderBy('createdAt', 'asc'), limit(300));
+    unsubMessages = onSnapshot(q, (snap) => {
+      const msgs = [];
+      snap.forEach(d => msgs.push(d.data()));
+      renderMessages(msgs);
+    });
+  }
+
+  function renderMessages(msgs){
+    const el = document.getElementById('messagesEl');
+    if(!el) return;
+    if(!msgs.length){
+      el.innerHTML = `<div class="day-divider">Start of conversation</div>`;
+      return;
+    }
+    let html = '';
+    let lastDay = '';
+    msgs.forEach(m => {
+      const day = dayLabel(m.createdAt);
+      if(day && day !== lastDay){
+        html += `<div class="day-divider">${day}</div>`;
+        lastDay = day;
+      }
+      const mine = m.uid === me.uid;
+      html += `
+        <div class="msg-row ${mine ? 'mine' : 'theirs'}">
+          ${!mine && activeChat.type === 'room' ? `<div class="msg-author">${escapeHtml(m.username||'')}</div>` : ''}
+          <div class="bubble">
+            ${escapeHtml(m.text)}
+            <span class="msg-time">${fmtTime(m.createdAt)}</span>
+          </div>
+        </div>`;
+    });
+    el.innerHTML = html;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function wireComposer(){
+    const input = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const waveEl = document.getElementById('waveEl');
+    const bars = waveEl.querySelectorAll('i');
+
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 110) + 'px';
+      const active = input.value.length > 0;
+      waveEl.classList.toggle('active', active);
+      bars.forEach((b, i) => {
+        const base = 6;
+        const amp = active ? (6 + Math.sin((input.value.length + i) * 1.3) * 8 + 8) : base;
+        b.style.height = Math.max(base, Math.abs(amp)) + 'px';
+      });
+    });
+    input.addEventListener('keydown', e => {
+      if(e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        send();
+      }
+    });
+    sendBtn.addEventListener('click', send);
+
+    async function send(){
+      const text = input.value.trim();
+      if(!text) return;
+      sendBtn.disabled = true;
+      input.value = '';
+      input.style.height = 'auto';
+      waveEl.classList.remove('active');
+      bars.forEach(b => b.style.height = '6px');
+      try{
+        await addDoc(messagesCollectionRef(), {
+          text, uid: me.uid, username: me.username, createdAt: serverTimestamp()
+        });
+        if(activeChat.type === 'dm'){
+          await setDoc(doc(db, 'dms', activeChat.id), { updatedAt: serverTimestamp() }, { merge: true });
+        }
+      } catch(e){
+        alert('Message failed to send: ' + (e.message || e));
+      }
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+</script>
+</body>
+</html>
