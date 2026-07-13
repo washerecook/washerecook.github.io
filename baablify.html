@@ -637,7 +637,6 @@
      1. PASTE YOUR FIREBASE PROJECT CONFIG HERE
      Firebase console -> Project settings -> General -> Your apps -> SDK setup
      ========================================================= */
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBRsRuDT0W87qfiZ-fNXqdV9pcm07cuxsc",
   authDomain: "baablify.firebaseapp.com",
@@ -700,6 +699,7 @@ const firebaseConfig = {
   let unsubMessages = null;
   let unsubRoomList = null;
   let unsubDmList = null;
+  let unsubUserDoc = null;
   let roomCache = [];
   let dmCache = [];
 
@@ -825,21 +825,31 @@ const firebaseConfig = {
 
   /* ---------- Auth state ---------- */
   if(isConfigured){
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
+      if(unsubUserDoc) unsubUserDoc();
       if(user){
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        const data = snap.exists() ? snap.data() : { username: 'unknown', usernameLower: 'unknown' };
-        me = { uid: user.uid, username: data.username, usernameLower: data.usernameLower };
-        authOverlay.classList.add('hidden');
-        appEl.classList.remove('hidden');
-        renderMe();
-        startRoomsListener();
-        startDmsListener();
-        renderChat();
-        authUsername.value = '';
-        authPassword.value = '';
-        authPasswordConfirm.value = '';
-        authSubmit.disabled = false;
+        // Listen (rather than one-time read) so that if this fires right after
+        // sign-up — before the profile doc has finished being written — the UI
+        // updates itself the moment the doc actually appears, instead of
+        // permanently locking in a stale "unknown" username.
+        unsubUserDoc = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+          if(!snap.exists()) return; // profile doc not written yet, wait for it
+          const data = snap.data();
+          const firstLoad = !me;
+          me = { uid: user.uid, username: data.username, usernameLower: data.usernameLower };
+          renderMe();
+          if(firstLoad){
+            authOverlay.classList.add('hidden');
+            appEl.classList.remove('hidden');
+            startRoomsListener();
+            startDmsListener();
+            renderChat();
+            authUsername.value = '';
+            authPassword.value = '';
+            authPasswordConfirm.value = '';
+            authSubmit.disabled = false;
+          }
+        });
       } else {
         me = null;
         activeChat = null;
